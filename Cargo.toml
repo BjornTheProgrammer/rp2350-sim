@@ -1,0 +1,9 @@
+[package]
+name = "rp2350-sim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+derive_more = { version = "1.0.0", features = ["full"] }
+anyhow = "1.0"
+num-traits = "0.2"
