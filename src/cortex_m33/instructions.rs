@@ -1,4 +1,4 @@
-use crate::{registers, rp2350, Register};
+use crate::cortex_m33::registers;
 use crate::rp2350::RP2350;
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -288,11 +288,11 @@ impl Instruction {
 
 	pub fn execute<S: registers::SpControl>(&self, rp2350: &mut RP2350<S>) {
 		println!("Instruction: {:?}", self.instruction);
-		let opcode_pc = rp2350.cortex_m33_registers.pc.get() & !1;
+		let opcode_pc = rp2350.cortex_m33.registers.pc.get() & !1;
 		let opcode = self.opcode.code;
 		let opcode_2 = rp2350.read_from_address(self.opcode.address + 2);
 
-		rp2350.cortex_m33_registers.pc.set(rp2350.cortex_m33_registers.pc.get() + 2);
+		rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 
 		match self.instruction {
 			Adcs => {},
@@ -300,12 +300,12 @@ impl Instruction {
 				let imm8: u32 = opcode as u32 & 0xff;
 				let rd = (opcode >> 8) & 0x7;
 
-				let sp = rp2350.cortex_m33_registers.sp.get();
-				rp2350.get_register_from_number(rd).set(sp + (imm8 << 2))
+				let sp = rp2350.cortex_m33.registers.sp.get();
+				rp2350.cortex_m33.get_register_from_number(rd).set(sp + (imm8 << 2))
 			},
 			AddSpPlusImmediate => {
 				let imm32 = (opcode as u32 & 0x7f) << 2;
-				rp2350.cortex_m33_registers.sp.set(rp2350.cortex_m33_registers.sp.get() + imm32);
+				rp2350.cortex_m33.registers.sp.set(rp2350.cortex_m33.registers.sp.get() + imm32);
 			},
 			AddsT1 => {
 				let opcode = opcode as u32;
@@ -325,16 +325,16 @@ impl Instruction {
 			AddRegister => {
 				let rdn = ((opcode & 0x80) >> 4) | (opcode & 0x7);
 				let left_value = {
-					let rdn = rp2350.get_register_from_number(rdn);
-					if rdn.is_pc() { rp2350.cortex_m33_registers.pc.get() + 2 } else { rdn.get() }
+					let rdn = rp2350.cortex_m33.get_register_from_number(rdn);
+					if rdn.is_pc() { rp2350.cortex_m33.registers.pc.get() + 2 } else { rdn.get() }
 				};
 
 				let rm = (opcode >> 3) & 0xf;
-				let right_value = rp2350.get_register_from_number(rm).get();
+				let right_value = rp2350.cortex_m33.get_register_from_number(rm).get();
 
 				let result = left_value + right_value;
 
-				let rdn = rp2350.get_register_from_number(rdn);
+				let rdn = rp2350.cortex_m33.get_register_from_number(rdn);
 
 				if !rdn.is_sp() && !rdn.is_pc() {
 					rdn.set(result);
@@ -348,7 +348,7 @@ impl Instruction {
 				let imm8 = opcode as u32 & 0xff;
 				let rd = (opcode >> 8) & 0x7;
 
-				rp2350.get_register_from_number(rd).set((opcode_pc & 0xfffffffc) + 4 + (imm8 << 2));
+				rp2350.cortex_m33.get_register_from_number(rd).set((opcode_pc & 0xfffffffc) + 4 + (imm8 << 2));
 			},
 			AndsT2 => {
 				todo!();
@@ -369,10 +369,10 @@ impl Instruction {
 					imm11 = (imm11 & 0x7ff) - 0x800;
 				}
 
-				let pc_value = rp2350.cortex_m33_registers.pc.get() as i32;
+				let pc_value = rp2350.cortex_m33.registers.pc.get() as i32;
 				let value = pc_value + imm11 + 2;
 				
-				rp2350.cortex_m33_registers.pc.set(value as u32);
+				rp2350.cortex_m33.registers.pc.set(value as u32);
 			},
 			Bics => {
 				todo!();
@@ -399,16 +399,16 @@ impl Instruction {
 				};
 
 				let imm32: i32 = (s << 24) | ((i1 << 23) | (i2 << 22) | (imm10 << 12) | (imm11 << 1));
-				rp2350.cortex_m33_registers.lr.set(rp2350.cortex_m33_registers.pc.get() + 2 | 0x1);
+				rp2350.cortex_m33.registers.lr.set(rp2350.cortex_m33.registers.pc.get() + 2 | 0x1);
 
-				let pc_value = rp2350.cortex_m33_registers.pc.get() as i32 + 2 + imm32;
-				rp2350.cortex_m33_registers.pc.set(pc_value as u32);
+				let pc_value = rp2350.cortex_m33.registers.pc.get() as i32 + 2 + imm32;
+				rp2350.cortex_m33.registers.pc.set(pc_value as u32);
 			},
 			Blx => {
 				let rm = (opcode >> 3) & 0xf;
-				rp2350.cortex_m33_registers.lr.set(rp2350.cortex_m33_registers.pc.get() | 0x1);
-				let rm_value = rp2350.get_register_from_number(rm).get();
-				rp2350.cortex_m33_registers.pc.set(rm_value & !1);
+				rp2350.cortex_m33.registers.lr.set(rp2350.cortex_m33.registers.pc.get() | 0x1);
+				let rm_value = rp2350.cortex_m33.get_register_from_number(rm).get();
+				rp2350.cortex_m33.registers.pc.set(rm_value & !1);
 			},
 			Bx => {
 				todo!();
@@ -432,30 +432,30 @@ impl Instruction {
 				todo!();
 			},
 			DmbSy => {
-				rp2350.cortex_m33_registers.pc.set(rp2350.cortex_m33_registers.pc.get() + 2);
+				rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 			},
 			DsbSy => {
-				rp2350.cortex_m33_registers.pc.set(rp2350.cortex_m33_registers.pc.get() + 2);
+				rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 			},
 			Eors => {},
 			IsbSy => {
-				rp2350.cortex_m33_registers.pc.set(rp2350.cortex_m33_registers.pc.get() + 2);
+				rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 			},
 			Ldmia => {
 				let rn = (opcode >> 8) & 0x7;
 				let registers = opcode & 0xff;
-				let mut address = rp2350.get_register_from_number(rn).get();
+				let mut address = rp2350.cortex_m33.get_register_from_number(rn).get();
 				for i in 0..8 {
 					if registers & (1 << i) > 0 {
 						let address_value = rp2350.read_u32_from_address(address);
-						rp2350.get_register_from_number(i).set(address_value);
+						rp2350.cortex_m33.get_register_from_number(i).set(address_value);
 						address += 4;
 					}
 				}
 
 				// Write back
 				if !(registers & (1 << rn) > 0) {
-					rp2350.get_register_from_number(rn).set(address);
+					rp2350.cortex_m33.get_register_from_number(rn).set(address);
 				}
 			},
 			LdrImmediate => {
@@ -504,10 +504,10 @@ impl Instruction {
 				let rm = (opcode >> 3) & 0xf;
 				let rd = ((opcode >> 4) & 0x8) | (opcode & 0x7);
 
-				let rm = rp2350.get_register_from_number(rm);
-				let mut value = if rm.is_pc() { rp2350.cortex_m33_registers.pc.get() + 2 } else { rm.get() };
+				let rm = rp2350.cortex_m33.get_register_from_number(rm);
+				let mut value = if rm.is_pc() { rp2350.cortex_m33.registers.pc.get() + 2 } else { rm.get() };
 
-				let rd = rp2350.get_register_from_number(rd);
+				let rd = rp2350.cortex_m33.get_register_from_number(rd);
 
 				if rd.is_pc() {
 					value &= !1;
@@ -546,11 +546,11 @@ impl Instruction {
 					}
 				}
 
-				let mut address = rp2350.cortex_m33_registers.sp.get() - 4 * bitcount;
+				let mut address = rp2350.cortex_m33.registers.sp.get() - 4 * bitcount;
 
 				for i in 0..=7 {
 					if self.opcode.code & (1 << i) > 0 {
-						let register = rp2350.get_register_from_number(i).get();
+						let register = rp2350.cortex_m33.get_register_from_number(i).get();
 
 						rp2350.write_to_address(address, register as u8);
 						address += 4;
@@ -559,17 +559,17 @@ impl Instruction {
 
 
 				if self.opcode.code & (1 << 8) > 0 {
-					rp2350.write_to_address(address, rp2350.cortex_m33_registers.lr.get() as u8);
+					rp2350.write_to_address(address, rp2350.cortex_m33.registers.lr.get() as u8);
 				}
 
-				let current_sp = rp2350.cortex_m33_registers.sp.get();
-				rp2350.cortex_m33_registers.sp.set(current_sp - 4 * bitcount);
+				let current_sp = rp2350.cortex_m33.registers.sp.get();
+				rp2350.cortex_m33.registers.sp.set(current_sp - 4 * bitcount);
 			},
 			Rev => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
-				let input = rp2350.get_register_from_number(rm).get();
-				rp2350.get_register_from_number(rd).set(
+				let input = rp2350.cortex_m33.get_register_from_number(rm).get();
+				rp2350.cortex_m33.get_register_from_number(rd).set(
 					((input & 0xff) << 24) |
 					(((input >> 8) & 0xff) << 16) |
 					(((input >> 16) & 0xff) << 8) |
@@ -579,8 +579,8 @@ impl Instruction {
 			Rev16 => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
-				let input = rp2350.get_register_from_number(rm).get();
-				rp2350.get_register_from_number(rd).set(
+				let input = rp2350.cortex_m33.get_register_from_number(rm).get();
+				rp2350.cortex_m33.get_register_from_number(rd).set(
 					(((input >> 16) & 0xff) << 24) |
 					(((input >> 24) & 0xff) << 16) |
 					((input & 0xff) << 8) |
@@ -604,17 +604,17 @@ impl Instruction {
 			Stmia => {
 				let rn = (opcode >> 8) & 0x7;
 				let registers = opcode & 0xff;
-				let mut address = rp2350.get_register_from_number(rn).get();
+				let mut address = rp2350.cortex_m33.get_register_from_number(rn).get();
 				for i in 0..8 {
 					if registers & (1 << i) > 0 {
-						let register_value = rp2350.get_register_from_number(i).get();
+						let register_value = rp2350.cortex_m33.get_register_from_number(i).get();
 						rp2350.write_to_address(address, register_value);
 						address += 4;
 					}
 				}
 				// Write back
 				if !(registers & (1 << rn) > 0) {
-					rp2350.get_register_from_number(rn).set(address);
+					rp2350.cortex_m33.get_register_from_number(rn).set(address);
 				}
 			},
 			StrImmediate => {
@@ -640,7 +640,7 @@ impl Instruction {
 			},
 			SubSpMinusImmediate => {
 				let imm32 = (opcode & 0x7f) << 2;
-				rp2350.cortex_m33_registers.sp.set(rp2350.cortex_m33_registers.sp.get() - imm32 as u32);
+				rp2350.cortex_m33.registers.sp.set(rp2350.cortex_m33.registers.sp.get() - imm32 as u32);
 			},
 			SubsT1 => {
 				todo!();
@@ -672,14 +672,14 @@ impl Instruction {
 			Uxtb => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
-				let value = rp2350.get_register_from_number(rm).get() & 0xff;
-				rp2350.get_register_from_number(rd).set(value);
+				let value = rp2350.cortex_m33.get_register_from_number(rm).get() & 0xff;
+				rp2350.cortex_m33.get_register_from_number(rd).set(value);
 			},
 			Uxth => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
-				let value = rp2350.get_register_from_number(rm).get() & 0xffff;
-				rp2350.get_register_from_number(rd).set(value);
+				let value = rp2350.cortex_m33.get_register_from_number(rm).get() & 0xffff;
+				rp2350.cortex_m33.get_register_from_number(rd).set(value);
 			},
 			Wfe => {
 				todo!();

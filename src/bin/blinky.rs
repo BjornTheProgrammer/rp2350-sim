@@ -1,4 +1,4 @@
-use rp2350_sim::{SpControlOn, RP2350};
+use rp2350_sim::RP2350;
 
 fn main() {
 	let hex = include_str!("../../programs/blinky.hex");
@@ -13,7 +13,7 @@ fn main() {
 		},
 	};
 
-	mcu.cortex_m33_registers.pc.set(0x304);
+	mcu.cortex_m33.registers.pc.set(0x304);
 
 	// println!("flash: {:?}", mcu.flash);
 

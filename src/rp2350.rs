@@ -1,8 +1,4 @@
-use crate::registers;
-use crate::CortexM33Registers;
-use crate::OpCode;
-use crate::Register;
-use crate::SpControlOn;
+use crate::cortex_m33::{CortexM33, SpControl, SpControlOn, OpCode};
 use anyhow::{Context, Result};
 
 const KB_OF_RAM: usize = 520;
@@ -29,22 +25,22 @@ AHB Peripherals 				0x50000000
 Core-local Peripherals (SIO) 	0xd0000000
 Cortex-M33 private registers 	0xe0000000
 */
-pub struct RP2350<S: registers::SpControl = SpControlOn> {
+pub struct RP2350<S: SpControl = SpControlOn> {
 	// SRAM is partitioned into 10 banks that act like one
 	pub sram: [u8; KB_OF_RAM * KB],
 
 	// Has to be on the heap, absolutely blows up the stack
 	pub flash: Box<[u8; MB_OF_FLASH * MB]>,
 
-	pub cortex_m33_registers: CortexM33Registers<S>,
+	pub cortex_m33: CortexM33<S>,
 }
 
-impl<S: registers::SpControl> RP2350<S> {
+impl<S: SpControl> RP2350<S> {
 	pub fn new() -> Self {
 		RP2350 {
 			sram: [0; KB_OF_RAM * 1024],
 			flash: Box::new([0xff; MB_OF_FLASH * 1024 * 1024]),
-			cortex_m33_registers: CortexM33Registers::new(),
+			cortex_m33: CortexM33::new()
 		}
 	}
 
@@ -71,7 +67,7 @@ impl<S: registers::SpControl> RP2350<S> {
 	}
 
 	pub fn get_opcode(&self) -> OpCode {
-		self.read_from_address(self.cortex_m33_registers.pc.get())
+		self.read_from_address(self.cortex_m33.registers.pc.get())
 	}
 
 	pub fn execute_instruction(&mut self) {
@@ -149,28 +145,6 @@ impl<S: registers::SpControl> RP2350<S> {
 			_ => {
 				unimplemented!("File a github issue and this will get implmeented")
 			}
-		}
-	}
-
-	pub fn get_register_from_number(&mut self, i: u16) -> &mut Register<S> {
-		match i {
-			0 => &mut self.cortex_m33_registers.r0,
-			1 => &mut self.cortex_m33_registers.r1,
-			2 => &mut self.cortex_m33_registers.r2,
-			3 => &mut self.cortex_m33_registers.r3,
-			4 => &mut self.cortex_m33_registers.r4,
-			5 => &mut self.cortex_m33_registers.r5,
-			6 => &mut self.cortex_m33_registers.r6,
-			7 => &mut self.cortex_m33_registers.r7,
-			8 => &mut self.cortex_m33_registers.r8,
-			9 => &mut self.cortex_m33_registers.r9,
-			10 => &mut self.cortex_m33_registers.r10,
-			11 => &mut self.cortex_m33_registers.r11,
-			12 => &mut self.cortex_m33_registers.r12,
-			13 => &mut self.cortex_m33_registers.sp,
-			14 => &mut self.cortex_m33_registers.lr,
-			15 => &mut self.cortex_m33_registers.pc,
-			_ => { unreachable!() }
 		}
 	}
 }
