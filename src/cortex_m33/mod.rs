@@ -1,17 +1,22 @@
-mod registers;
+pub mod registers;
 mod instructions;
+mod apsr;
+mod pseudo_helpers;
 
-pub use registers::{SpControl, SpControlOn, SpControlOff, Register, CortexM33Registers};
+use crate::cortex_m33::apsr::Apsr;
+use crate::cortex_m33::registers::{SpControl, SpControlOn, CortexM33Registers, Register};
 pub use instructions::OpCode;
 
 pub struct CortexM33<S: SpControl = SpControlOn> {
 	pub registers: CortexM33Registers<S>,
+	pub apsr: Apsr,
 }
 
 impl<S: SpControl> CortexM33<S> {
 	pub fn new() -> Self {
 		Self {
-			registers: CortexM33Registers::new()
+			registers: CortexM33Registers::new(),
+			apsr: Apsr::new(),
 		}
 	}
 

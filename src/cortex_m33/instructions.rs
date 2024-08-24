@@ -1,3 +1,4 @@
+use crate::cortex_m33::pseudo_helpers::get_bit;
 use crate::cortex_m33::registers;
 use crate::rp2350::RP2350;
 
@@ -107,6 +108,9 @@ enum InstructionType {
 }
 
 use InstructionType::*;
+
+use super::apsr::Apsr;
+use super::pseudo_helpers::{add_with_carry, is_zero_bit};
 
 impl Instruction {
 	pub fn new(opcode: &OpCode, opcode_2: &OpCode) -> Self {
@@ -294,6 +298,7 @@ impl Instruction {
 
 		rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 
+
 		match self.instruction {
 			Adcs => {},
 			AddRegisterSpPlusImmediate => {
@@ -308,19 +313,31 @@ impl Instruction {
 				rp2350.cortex_m33.registers.sp.set(rp2350.cortex_m33.registers.sp.get() + imm32);
 			},
 			AddsT1 => {
-				let opcode = opcode as u32;
+				let imm3 = (opcode >> 6) & 0x7;
+				let rn = (opcode >> 3) & 0x7;
+				let rd = opcode & 0x7;
 
-				let _imm3 = (opcode >> 6) & 0x7;
-				let _rn = (opcode >> 3) & 0x7;
-				let _rd = opcode & 0x7;
-
-				todo!();
+				let rn_value = rp2350.cortex_m33.get_register_from_number(rn).get();
+				let result = add_instruction_update_flags(&mut rp2350.cortex_m33.apsr, rn_value, imm3 as u32, false);
+				rp2350.cortex_m33.get_register_from_number(rd).set(result);
 			},
 			AddsT2 => {
-				todo!();
+				let imm8 = opcode & 0xff;
+      			let rdn = (opcode >> 8) & 0x7;
+
+      			let rdn_value = rp2350.cortex_m33.get_register_from_number(rdn).get();
+      			let result = add_instruction_update_flags(&mut rp2350.cortex_m33.apsr, rdn_value, imm8 as u32, false);
+      			rp2350.cortex_m33.get_register_from_number(rdn).set(result);
 			},
 			AddsRegister => {
-				todo!();
+				let rm = (opcode >> 6) & 0x7;
+				let rn = (opcode >> 3) & 0x7;
+				let rd = opcode & 0x7;
+
+				let rn_value = rp2350.cortex_m33.get_register_from_number(rn).get();
+				let rm_value = rp2350.cortex_m33.get_register_from_number(rm).get();
+      			let result = add_instruction_update_flags(&mut rp2350.cortex_m33.apsr, rn_value, rm_value, false);
+      			rp2350.cortex_m33.get_register_from_number(rd).set(result);
 			},
 			AddRegister => {
 				let rdn = ((opcode & 0x80) >> 4) | (opcode & 0x7);
@@ -692,4 +709,15 @@ impl Instruction {
 			},
 		}
 	}
+}
+
+fn add_instruction_update_flags(apsr: &mut Apsr, x: u32, y: u32, carry_in: bool) -> u32 {
+	let (result, carry, overflow) = add_with_carry(x, y, carry_in);
+
+	apsr.set_n(get_bit(result, 31));
+	apsr.set_z(is_zero_bit(result));
+	apsr.set_c(carry);
+	apsr.set_v(overflow);
+
+	result
 }

@@ -1,4 +1,5 @@
-use crate::cortex_m33::{CortexM33, SpControl, SpControlOn, OpCode};
+use crate::cortex_m33::registers::{SpControl, SpControlOn};
+use crate::cortex_m33::{CortexM33, OpCode};
 use anyhow::{Context, Result};
 
 const KB_OF_RAM: usize = 520;
