@@ -292,9 +292,7 @@ impl Instruction {
 		let opcode = self.opcode.code;
 		let opcode_2 = rp2350.read_from_address(self.opcode.address + 2);
 
-		println!("regis_value: {:#x}", rp2350.cortex_m33_registers.pc.get());
 		rp2350.cortex_m33_registers.pc.set(rp2350.cortex_m33_registers.pc.get() + 2);
-		println!("regis_value: {:#x}", rp2350.cortex_m33_registers.pc.get());
 
 		match self.instruction {
 			Adcs => {},
@@ -383,10 +381,34 @@ impl Instruction {
 				todo!();
 			},
 			Bl => {
-				todo!();
+				let opcode = opcode as i32;
+				let opcode_2 = opcode_2.code as i32;
+
+				let imm11 = opcode_2 & 0x7ff;
+				let j2 = (opcode_2 >> 11) & 0x1;
+				let j1 = (opcode_2 >> 13) & 0x1;
+				let imm10 = opcode & 0x3ff;
+				let s = (opcode >> 10) & 0x1;
+				let i1 = 1 - (s ^ j1);
+				let i2 = 1 - (s ^ j2);
+
+				let s = if s > 0 {
+					0b11111111
+				} else {
+					0
+				};
+
+				let imm32: i32 = (s << 24) | ((i1 << 23) | (i2 << 22) | (imm10 << 12) | (imm11 << 1));
+				rp2350.cortex_m33_registers.lr.set(rp2350.cortex_m33_registers.pc.get() + 2 | 0x1);
+
+				let pc_value = rp2350.cortex_m33_registers.pc.get() as i32 + 2 + imm32;
+				rp2350.cortex_m33_registers.pc.set(pc_value as u32);
 			},
 			Blx => {
-				todo!();
+				let rm = (opcode >> 3) & 0xf;
+				rp2350.cortex_m33_registers.lr.set(rp2350.cortex_m33_registers.pc.get() | 0x1);
+				let rm_value = rp2350.get_register_from_number(rm).get();
+				rp2350.cortex_m33_registers.pc.set(rm_value & !1);
 			},
 			Bx => {
 				todo!();

@@ -166,6 +166,26 @@ mod tests {
         }
     }
 
+    struct Bl;
+    impl Bl {
+        fn opcode(imm: i32) -> u32 {
+            let imm11 = (imm >> 1) & 0x7ff;
+            let imm10 = (imm >> 12) & 0x3ff;
+            let s = if imm < 0 { 1 } else { 0 };
+            let j2 = 1 - (((imm >> 22) & 0x1) ^ s);
+            let j1 = 1 - (((imm >> 23) & 0x1) ^ s);
+            let opcode = (0b1101 << 28) | (j1 << 29) | (j2 << 27) | (imm11 << 16) | (0b11110 << 11) | (s << 10) | imm10;
+            return opcode as u32 >> 0;
+        }
+    }
+
+    struct Blx;
+    impl Blx {
+        fn opcode<T: rp2350_sim::SpControl>(rm: Register<T>) -> u16 {
+            return (0b010001111 << 7) | (rm.number() << 3);
+        }
+    }
+
     #[test]
     fn add_sp_plus_immediate() {
         // should execute a `add sp, 0x10` instruction
@@ -231,6 +251,63 @@ mod tests {
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33_registers.pc.get(), 0x20000002);
+    }
+
+    #[test]
+    fn bl() {
+        // should execute `bl 0x34` instruction
+        let mut rp2350: RP2350 = RP2350::new();
+        rp2350.cortex_m33_registers.pc.set(RAM_START_ADDRESS);
+
+        rp2350.write_to_address(RAM_START_ADDRESS, Bl::opcode(0x34));
+
+        rp2350.execute_instruction();
+
+        assert_eq!(rp2350.cortex_m33_registers.pc.get(), 0x20000038);
+        assert_eq!(rp2350.cortex_m33_registers.lr.get(), 0x20000005);
+    }
+
+    #[test]
+    fn bl2() {
+        // should execute `bl -0x10` instruction
+        let mut rp2350: RP2350 = RP2350::new();
+        rp2350.cortex_m33_registers.pc.set(RAM_START_ADDRESS);
+
+        rp2350.write_to_address(RAM_START_ADDRESS, Bl::opcode(-0x10));
+
+        rp2350.execute_instruction();
+
+        assert_eq!(rp2350.cortex_m33_registers.pc.get(), 0x20000004 - 0x10);
+        assert_eq!(rp2350.cortex_m33_registers.lr.get(), 0x20000005);
+    }
+
+    #[test]
+    fn bl3() {
+        // should execute `bl -3242` instruction
+        let mut rp2350: RP2350 = RP2350::new();
+        rp2350.cortex_m33_registers.pc.set(RAM_START_ADDRESS);
+
+        rp2350.write_to_address(RAM_START_ADDRESS, Bl::opcode(-3242));
+
+        rp2350.execute_instruction();
+
+        assert_eq!(rp2350.cortex_m33_registers.pc.get(), 0x20000004 - 3242);
+        assert_eq!(rp2350.cortex_m33_registers.lr.get(), 0x20000005);
+    }
+
+    #[test]
+    fn blx() {
+        // should execute `blx r3` instruction
+        let mut rp2350: RP2350 = RP2350::new();
+        rp2350.cortex_m33_registers.pc.set(RAM_START_ADDRESS);
+        rp2350.cortex_m33_registers.r3.set(0x20000201);
+
+        rp2350.write_to_address(RAM_START_ADDRESS, Blx::opcode(rp2350.cortex_m33_registers.r3));
+
+        rp2350.execute_instruction();
+
+        assert_eq!(rp2350.cortex_m33_registers.pc.get(), 0x20000200);
+        assert_eq!(rp2350.cortex_m33_registers.lr.get(), 0x20000003);
     }
 
     #[test]
