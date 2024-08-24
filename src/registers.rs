@@ -26,87 +26,89 @@ pub struct CortexM33Registers<S: SpControl> {
 impl<S: SpControl> CortexM33Registers<S> {
 	pub fn new() -> Self {
 		Self {
-			r0: Register::R0(0),
-			r1: Register::R1(0),
-			r2: Register::R2(0),
-			r3: Register::R3(0),
-			r4: Register::R4(0),
-			r5: Register::R5(0),
-			r6: Register::R6(0),
-			r7: Register::R7(0),
-			r8: Register::R8(0),
-			r9: Register::R9(0),
-			r10: Register::R10(0),
-			r11: Register::R11(0),
-			r12: Register::R12(0),
-			sp: Register::SP(SP::new(MSP(0), PSP(0))),
-			lr: Register::LR(0),
-			pc: Register::PC(0)
+			r0: Register::GeneralRegister(0, 0),
+			r1: Register::GeneralRegister(1, 0),
+			r2: Register::GeneralRegister(2, 0),
+			r3: Register::GeneralRegister(3, 0),
+			r4: Register::GeneralRegister(4, 0),
+			r5: Register::GeneralRegister(5, 0),
+			r6: Register::GeneralRegister(6, 0),
+			r7: Register::GeneralRegister(7, 0),
+			r8: Register::GeneralRegister(8, 0),
+			r9: Register::GeneralRegister(9, 0),
+			r10: Register::GeneralRegister(10, 0),
+			r11: Register::GeneralRegister(11, 0),
+			r12: Register::GeneralRegister(12, 0),
+			sp: Register::SPRegister(13, SP::new(MSP(0), PSP(0))),
+			lr: Register::LrRegister(14, 0),
+			pc: Register::PcRegister(15, 0)
 		}
 	}
 }
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum Register<S: SpControl> {
-	R0(u32),
-	R1(u32),
-	R2(u32),
-	R3(u32),
-	R4(u32),
-	R5(u32),
-	R6(u32),
-	R7(u32),
-	R8(u32),
-	R9(u32),
-	R10(u32),
-	R11(u32),
-	R12(u32),
-	SP(SP<S>),
-	LR(u32),
-	PC(u32)
+	// First value is the register number.
+	GeneralRegister(u16, u32),
+	LrRegister(u16, u32),
+	PcRegister(u16, u32),
+	SPRegister(u16, SP<S>),
 }
 
 impl<S: SpControl> Register<S> {
 	pub fn get(&self) -> u32 {
 		match self {
-			Register::R0(val) => *val,
-			Register::R1(val) => *val,
-			Register::R2(val) => *val,
-			Register::R3(val) => *val,
-			Register::R4(val) => *val,
-			Register::R5(val) => *val,
-			Register::R6(val) => *val,
-			Register::R7(val) => *val,
-			Register::R8(val) => *val,
-			Register::R9(val) => *val,
-			Register::R10(val) => *val,
-			Register::R11(val) => *val,
-			Register::R12(val) => *val,
-			Register::SP(val) => val.get(),
-			Register::LR(val) => *val,
-			Register::PC(val) => *val,
+			Register::GeneralRegister(_, val) => *val,
+			Register::LrRegister(_, val) => *val,
+			Register::PcRegister(_, val) => *val,
+			Register::SPRegister(_, val) => val.get(),
 		}
 	}
 
 	pub fn set(&mut self, value: u32) {
 		match self {
-			Register::R0(val) => *val = value,
-			Register::R1(val) => *val = value,
-			Register::R2(val) => *val = value,
-			Register::R3(val) => *val = value,
-			Register::R4(val) => *val = value,
-			Register::R5(val) => *val = value,
-			Register::R6(val) => *val = value,
-			Register::R7(val) => *val = value,
-			Register::R8(val) => *val = value,
-			Register::R9(val) => *val = value,
-			Register::R10(val) => *val = value,
-			Register::R11(val) => *val = value,
-			Register::R12(val) => *val = value,
-			Register::SP(val) => val.set(value),
-			Register::LR(val) => *val = value,
-			Register::PC(val) => *val = value
+			Register::GeneralRegister(_, val) => *val = value,
+			Register::LrRegister(_, val) => *val = value,
+			Register::PcRegister(_, val) => *val = value,
+			Register::SPRegister(_, val) => val.set(value),
 		};
+	}
+
+	pub fn number(&self) -> u16 {
+		match self {
+			Register::GeneralRegister(val, _) => *val,
+			Register::LrRegister(val, _) => *val,
+			Register::PcRegister(val, _) => *val,
+			Register::SPRegister(val, _) => *val,
+		}
+	}
+
+	pub fn is_lr(&self) -> bool {
+		match self {
+			Register::LrRegister(_, _) => true,
+			_ => false
+		}
+	}
+
+	pub fn is_pc(&self) -> bool {
+		match self {
+			Register::PcRegister(_, _) => true,
+			_ => false
+		}
+	}
+
+	pub fn is_sp(&self) -> bool {
+		match self {
+			Register::SPRegister(_, _) => true,
+			_ => false
+		}
+	}
+
+	pub fn is_general_register(&self) -> bool {
+		match self {
+			Register::GeneralRegister(_, _) => true,
+			_ => false
+		}
 	}
 }
 
@@ -118,36 +120,36 @@ pub struct PSP (pub u32);
 
 // Define the SpControl trait with associated methods for get and set
 pub trait SpControl {
-    fn get(sp: &SP<Self>) -> u32 where Self: Sized;
-    fn set(sp: &mut SP<Self>, value: u32) where Self: Sized;
+	fn get(sp: &SP<Self>) -> u32 where Self: Sized;
+	fn set(sp: &mut SP<Self>, value: u32) where Self: Sized;
 }
 
 #[derive(PartialEq, Copy, Clone)]
 // Define the struct for the Stack Pointer Control
 pub struct SP<S: SpControl> {
-    msp: MSP,
-    psp: PSP,
-    _state: PhantomData<S>,
+	msp: MSP,
+	psp: PSP,
+	_state: PhantomData<S>,
 }
 
 impl<S: SpControl> SP<S> {
-    pub fn new(msp: MSP, psp: PSP) -> Self {
-        Self {
-            msp,
-            psp,
-            _state: PhantomData,
-        }
-    }
+	pub fn new(msp: MSP, psp: PSP) -> Self {
+		Self {
+			msp,
+			psp,
+			_state: PhantomData,
+		}
+	}
 
-    // Generic method for get
-    pub fn get(&self) -> u32 {
-        S::get(self)
-    }
+	// Generic method for get
+	pub fn get(&self) -> u32 {
+		S::get(self)
+	}
 
-    // Generic method for set
-    pub fn set(&mut self, value: u32) {
-        S::set(self, value)
-    }
+	// Generic method for set
+	pub fn set(&mut self, value: u32) {
+		S::set(self, value)
+	}
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -157,22 +159,22 @@ pub struct SpControlOff;
 
 // Implement the SpControl trait for SpControlOn
 impl SpControl for SpControlOn {
-    fn get(sp: &SP<Self>) -> u32 {
-        sp.msp.0
-    }
+	fn get(sp: &SP<Self>) -> u32 {
+		sp.msp.0
+	}
 
-    fn set(sp: &mut SP<Self>, value: u32) {
-        sp.msp.0 = value;
-    }
+	fn set(sp: &mut SP<Self>, value: u32) {
+		sp.msp.0 = value;
+	}
 }
 
 // Implement the SpControl trait for SpControlOff
 impl SpControl for SpControlOff {
-    fn get(sp: &SP<Self>) -> u32 {
-        sp.psp.0
-    }
+	fn get(sp: &SP<Self>) -> u32 {
+		sp.psp.0
+	}
 
-    fn set(sp: &mut SP<Self>, value: u32) {
-        sp.psp.0 = value;
-    }
+	fn set(sp: &mut SP<Self>, value: u32) {
+		sp.psp.0 = value;
+	}
 }

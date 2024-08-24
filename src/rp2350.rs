@@ -1,6 +1,7 @@
 use crate::registers;
 use crate::CortexM33Registers;
 use crate::OpCode;
+use crate::Register;
 use crate::SpControlOn;
 use anyhow::{Context, Result};
 
@@ -70,19 +71,21 @@ impl<S: registers::SpControl> RP2350<S> {
 	}
 
 	pub fn get_opcode(&self) -> OpCode {
-		println!("pc is {:#x}", self.cortex_m33_registers.pc.get());
-
 		self.read_from_address(self.cortex_m33_registers.pc.get())
 	}
 
 	pub fn execute_instruction(&mut self) {
 		let opcode = self.get_opcode();
 		opcode.execute(self);
+	}
 
-		// if let Some(push) = Push::from_op_code(opcode) {
-		// 	println!("executing");
-		// 	push.execute().unwrap();
-		// };
+	pub fn read_u32_from_address(&self, address: u32) -> u32 {
+		let first_byte = self.read_from_address(address).code;
+		let second_byte = self.read_from_address(address + 2).code;
+
+		let result: u32 = ((second_byte as u32) << 16) | (first_byte as u32);
+
+		result
 	}
 
 	pub fn read_from_address(&self, address: u32) -> OpCode {
@@ -93,7 +96,11 @@ impl<S: registers::SpControl> RP2350<S> {
 				let second_byte = self.flash[flash_address as usize + 1];
 
 				let opcode: u16 = ((first_byte as u16) << 8) | (second_byte as u16);
-				OpCode(opcode)
+				
+				OpCode {
+					code: opcode,
+					address
+				}
 			},
 			RAM_START_ADDRESS..APB_START_ADDRESS => {
 				let ram_address = address - RAM_START_ADDRESS;
@@ -101,14 +108,17 @@ impl<S: registers::SpControl> RP2350<S> {
 				let second_byte = self.sram[ram_address as usize + 1];
 
 				let opcode: u16 = ((first_byte as u16) << 8) | (second_byte as u16);
-				OpCode(opcode)
+				
+				OpCode {
+					code: opcode,
+					address
+				}
 			},
 			_ => unimplemented!("File a github issue and this will get implmeented")
 		}
 	}
 
 	pub fn write_to_address<V: num_traits::ToBytes + derive_more::LowerHex>(&mut self, address: u32, value: V) {
-		println!("writing to address: {:#x}\nWith value: {:#x}", address, value);
 		match address {
 			0x00000000..FLASH_START_ADDRESS => {
 				panic!("What the fuck are you doing? ROM is readonly.")
@@ -120,16 +130,48 @@ impl<S: registers::SpControl> RP2350<S> {
 				let bytes = value.to_be_bytes();
 				let bytes = bytes.as_ref();
 
-				for (i, byte) in bytes.iter().enumerate() {
-					println!("sram index: {:?} - byte: {:?}", address as usize - 0x20000000 as usize + i, byte);
-					self.sram[address as usize - 0x20000000 as usize + i] = *byte;
+				for (i, byte) in bytes.chunks(2).rev().enumerate() {
+					match byte.get(0) {
+						Some(val) => {
+							self.sram[address as usize - 0x20000000 as usize + i * 2] = *val;
+						},
+						None => ()
+					}
+
+					match byte.get(1) {
+						Some(val) => {
+							self.sram[address as usize - 0x20000000 as usize + i * 2 + 1] = *val;
+						},
+						None => ()
+					}
 				}
 			}
 			_ => {
 				unimplemented!("File a github issue and this will get implmeented")
 			}
 		}
+	}
 
+	pub fn get_register_from_number(&mut self, i: u16) -> &mut Register<S> {
+		match i {
+			0 => &mut self.cortex_m33_registers.r0,
+			1 => &mut self.cortex_m33_registers.r1,
+			2 => &mut self.cortex_m33_registers.r2,
+			3 => &mut self.cortex_m33_registers.r3,
+			4 => &mut self.cortex_m33_registers.r4,
+			5 => &mut self.cortex_m33_registers.r5,
+			6 => &mut self.cortex_m33_registers.r6,
+			7 => &mut self.cortex_m33_registers.r7,
+			8 => &mut self.cortex_m33_registers.r8,
+			9 => &mut self.cortex_m33_registers.r9,
+			10 => &mut self.cortex_m33_registers.r10,
+			11 => &mut self.cortex_m33_registers.r11,
+			12 => &mut self.cortex_m33_registers.r12,
+			13 => &mut self.cortex_m33_registers.sp,
+			14 => &mut self.cortex_m33_registers.lr,
+			15 => &mut self.cortex_m33_registers.pc,
+			_ => { unreachable!() }
+		}
 	}
 }
 
