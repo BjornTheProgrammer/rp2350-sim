@@ -1,7 +1,7 @@
 pub mod registers;
 mod instructions;
 mod apsr;
-mod pseudo_helpers;
+mod operation;
 
 use crate::cortex_m33::apsr::Apsr;
 use crate::cortex_m33::registers::{SpControl, SpControlOn, CortexM33Registers, Register};

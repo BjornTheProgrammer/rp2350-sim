@@ -1,4 +1,6 @@
-use crate::cortex_m33::pseudo_helpers::get_bit;
+use crate::cortex_m33::operation::{add_with_carry, decode_imm_shift};
+use bilge::prelude::*;
+use crate::cortex_m33::operation::{get_bit, get_bits, is_zero_bit, shift_c, SRType};
 use crate::cortex_m33::registers;
 use crate::rp2350::RP2350;
 
@@ -22,264 +24,263 @@ struct Instruction {
 
 #[derive(Debug)]
 enum InstructionType {
-	Adcs,
-	AddRegisterSpPlusImmediate,
-	AddSpPlusImmediate,
+	AdcT1,
+	AddSpPlusImmediateT1,
+	AddSpPlusImmediateT2,
 	AddsT1,
 	AddsT2,
-	AddsRegister,
-	AddRegister,
-	Adr,
-	AndsT2,
-	AsrsImmediate,
-	AsrsRegister,
-	BWithCondition,
-	B,
-	Bics,
-	Bkpt,
-	Bl,
-	Blx,
-	Bx,
-	CmnRegister,
-	CmpImmediate,
-	CmpRegister,
+	AddRegisterT1,
+	AddRegisterT2,
+	AdrT1,
+	AndRegisterT1,
+	AsrImmediateT1,
+	AsrRegisterT1,
+	BT1,
+	BT2,
+	BicRegisterT1,
+	BkptT1,
+	BlT1,
+	BlxT1,
+	BxT1,
+	CmnRegisterT1,
+	CmpImmediateT1,
+	CmpRegisterT1,
 	CmpRegisterT2,
-	CpsidI,
-	CpsieI,
-	DmbSy,
-	DsbSy,
-	Eors,
-	IsbSy,
-	Ldmia,
-	LdrImmediate,
-	LdrSpPlusImmediate,
-	LdrLiteral,
-	LdrRegister,
-	LdrbImmediate,
-	LdrbRegister,
-	LdrhImmediate,
-	LdrhRegister,
-	Ldrsb,
-	Ldrsh,
-	LslsImmediate,
-	LslsRegister,
-	LsrsImmediate,
-	LsrsRegister,
-	Mov,
-	Movs,
-	Mrs,
-	Msr,
-	Muls,
-	Mvns,
-	OrrsT2,
-	Pop,
-	Push,
-	Rev,
-	Rev16,
-	Revsh,
-	Ror,
-	Negs,
-	Nop,
-	SbcsT1,
-	Sev,
-	Stmia,
-	StrImmediate,
-	StrSpPlusImmediate,
-	StrRegister,
-	StrbImmediate,
-	StrbRegister,
-	StrhImmediate,
-	StrhRegister,
-	SubSpMinusImmediate,
-	SubsT1,
-	SubsT2,
-	SubsRegister,
-	Svc,
-	Sxtb,
-	Sxth,
-	Tst,
-	Udf,
+	CpsT1Id,
+	CpsT1Ie,
+	DmbT1Sy,
+	DsbT1Sy,
+	EorRegisterT1,
+	IsbT1Sy,
+	LdmiaT1,
+	LdrImmediateT1,
+	LdrImmediateT2,
+	LdrLiteralT1,
+	LdrRegisterT1,
+	LdrbImmediateT1,
+	LdrbRegisterT1,
+	LdrhImmediateT1,
+	LdrhRegisterT1,
+	LdrsbRegisterT1,
+	LdrshRegisterT1,
+	LslImmediateT1,
+	LslRegisterT1,
+	LsrImmediateT1,
+	LsrRegisterT1,
+	MovRegisterT1,
+	MovImmediateT1,
+	MrsT1,
+	MsrT1,
+	MulT1,
+	MvnT1,
+	OrrRegisterT1,
+	PopT1,
+	PushT1,
+	RevT1,
+	Rev16T1,
+	RevshT1,
+	RorRegisterT1,
+	RsbImmediateT1,
+	NopT1,
+	SbcRegisterT1,
+	SevT1,
+	StmiaT1,
+	StrImmediateT1,
+	StrImmediateT2,
+	StrRegisterT1,
+	StrbImmediateT1,
+	StrbRegisterT1,
+	StrhImmediateT1,
+	StrhRegisterT1,
+	SubSpMinusImmediateT1,
+	SubT1,
+	SubT2,
+	SubRegisterT1,
+	SvcT1,
+	SxtbT1,
+	SxthT1,
+	TstRegisterT1,
+	UdfT1,
 	UdfT2,
-	Uxtb,
-	Uxth,
-	Wfe,
-	Wfi,
-	Yield,
+	UxtbT1,
+	UxthT1,
+	WfeT1,
+	WfiT1,
+	YieldT1,
 }
 
 use InstructionType::*;
 
 use super::apsr::Apsr;
-use super::pseudo_helpers::{add_with_carry, is_zero_bit};
 
 impl Instruction {
 	pub fn new(opcode: &OpCode, opcode_2: &OpCode) -> Self {
 		let instruction = if opcode.code >> 6 == 0b0100000101 {
-			Adcs
+			AdcT1
 		} else if opcode.code >> 11 == 0b10101 {
-			AddRegisterSpPlusImmediate
+			AddSpPlusImmediateT1
 		} else if opcode.code >> 7 == 0b101100000 {
-			AddSpPlusImmediate
+			AddSpPlusImmediateT2
 		} else if opcode.code >> 9 == 0b0001110 {
 			AddsT1
 		} else if opcode.code >> 11 == 0b00110 {
 			AddsT2
 		} else if opcode.code >> 9 == 0b0001100 {
-			AddsRegister
+			AddRegisterT1
 		} else if opcode.code >> 8 == 0b01000100 {
-			AddRegister
+			AddRegisterT2
 		} else if opcode.code >> 11 == 0b10100 {
-			Adr
+			AdrT1
 		} else if opcode.code >> 6 == 0b0100000000 {
-			AndsT2
+			AndRegisterT1
 		} else if opcode.code >> 11 == 0b00010 {
-			AsrsImmediate
+			AsrImmediateT1
 		} else if opcode.code >> 6 == 0b0100000100 {
-			AsrsRegister
+			AsrRegisterT1
 		} else if opcode.code >> 12 == 0b1101 && ((opcode.code >> 9) & 0x7) != 0b111 {
-			BWithCondition
+			BT1
 		} else if opcode.code >> 11 == 0b11100 {
-			B
+			BT2
 		} else if opcode.code >> 6 == 0b0100001110 {
-			Bics
+			BicRegisterT1
 		} else if opcode.code >> 8 == 0b10111110 {
-			Bkpt
+			BkptT1
 		} else if opcode.code >> 11 == 0b11110 && opcode_2.code >> 14 == 0b11 && ((opcode_2.code >> 12) & 0x1) == 1 {
-			Bl
+			BlT1
 		} else if opcode.code >> 7 == 0b010001111 && (opcode.code & 0x7) == 0 {
-			Blx
+			BlxT1
 		} else if opcode.code >> 7 == 0b010001110 && (opcode.code & 0x7) == 0 {
-			Bx
+			BxT1
 		} else if opcode.code >> 6 == 0b0100001011 {
-			CmnRegister
+			CmnRegisterT1
 		} else if opcode.code >> 11 == 0b00101 {
-			CmpImmediate
+			CmpImmediateT1
 		} else if opcode.code >> 6 == 0b0100001010 {
-			CmpRegister
+			CmpRegisterT1
 		} else if opcode.code >> 8 == 0b01000101 {
 			CmpRegisterT2
 		} else if opcode.code == 0xb672 {
-			CpsidI
+			CpsT1Id
 		} else if opcode.code == 0xb662 {
-			CpsieI
+			CpsT1Ie
 		} else if opcode.code == 0xf3bf && (opcode_2.code & 0xfff0) == 0x8f50 {
-			DmbSy
+			DmbT1Sy
 		} else if opcode.code == 0xf3bf && (opcode_2.code & 0xfff0) == 0x8f40 {
-			DsbSy
+			DsbT1Sy
 		} else if opcode.code >> 6 == 0b0100000001 {
-			Eors
+			EorRegisterT1
 		} else if opcode.code == 0xf3bf && (opcode_2.code & 0xfff0) == 0x8f60 {
-			IsbSy
+			IsbT1Sy
 		} else if opcode.code >> 11 == 0b11001 {
-			Ldmia
+			LdmiaT1
 		} else if opcode.code >> 11 == 0b01101 {
-			LdrImmediate
+			LdrImmediateT1
 		} else if opcode.code >> 11 == 0b10011 {
-			LdrSpPlusImmediate
+			LdrImmediateT2
 		} else if opcode.code >> 11 == 0b01001 {
-			LdrLiteral
+			LdrLiteralT1
 		} else if opcode.code >> 9 == 0b0101100 {
-			LdrRegister
+			LdrRegisterT1
 		} else if opcode.code >> 11 == 0b01111 {
-			LdrbImmediate
+			LdrbImmediateT1
 		} else if opcode.code >> 9 == 0b0101110 {
-			LdrbRegister
+			LdrbRegisterT1
 		} else if opcode.code >> 11 == 0b10001 {
-			LdrhImmediate
+			LdrhImmediateT1
 		} else if opcode.code >> 9 == 0b0101101 {
-			LdrhRegister
+			LdrhRegisterT1
 		} else if opcode.code >> 9 == 0b0101011 {
-			Ldrsb
+			LdrsbRegisterT1
 		} else if opcode.code >> 9 == 0b0101111 {
-			Ldrsh
+			LdrshRegisterT1
 		} else if opcode.code >> 11 == 0b00000 {
-			LslsImmediate
+			LslImmediateT1
 		} else if opcode.code >> 6 == 0b0100000010 {
-			LslsRegister
+			LslRegisterT1
 		} else if opcode.code >> 11 == 0b00001 {
-			LsrsImmediate
+			LsrImmediateT1
 		} else if opcode.code >> 6 == 0b0100000011 {
-			LsrsRegister
+			LsrRegisterT1
 		} else if opcode.code >> 8 == 0b01000110 {
-			Mov
+			MovRegisterT1
 		} else if opcode.code >> 11 == 0b00100 {
-			Movs
+			MovImmediateT1
 		} else if opcode.code == 0b1111001111101111 && opcode_2.code >> 12 == 0b1000 {
-			Mrs
+			MrsT1
 		} else if opcode.code >> 4 == 0b111100111000 && opcode_2.code >> 8 == 0b10001000 {
-			Msr
+			MsrT1
 		} else if opcode.code >> 6 == 0b0100001101 {
-			Muls
+			MulT1
 		} else if opcode.code >> 6 == 0b0100001111 {
-			Mvns
+			MvnT1
 		} else if opcode.code >> 6 == 0b0100001100 {
-			OrrsT2
+			OrrRegisterT1
 		} else if opcode.code >> 9 == 0b1011110 {
-			Pop
+			PopT1
 		} else if opcode.code >> 9 == 0b1011010 {
-			Push
+			PushT1
 		} else if opcode.code >> 6 == 0b1011101000 {
-			Rev
+			RevT1
 		} else if opcode.code >> 6 == 0b1011101001 {
-			Rev16
+			Rev16T1
 		} else if opcode.code >> 6 == 0b1011101011 {
-			Revsh
+			RevshT1
 		} else if opcode.code >> 6 == 0b0100000111 {
-			Ror
+			RorRegisterT1
 		} else if opcode.code >> 6 == 0b0100001001 {
-			Negs
+			RsbImmediateT1
 		} else if opcode.code == 0b1011111100000000 {
-			Nop
+			NopT1
 		} else if opcode.code >> 6 == 0b0100000110 {
-			SbcsT1
+			SbcRegisterT1
 		} else if opcode.code == 0b1011111101000000 {
-			Sev
+			SevT1
 		} else if opcode.code >> 11 == 0b11000 {
-			Stmia
+			StmiaT1
 		} else if opcode.code >> 11 == 0b01100 {
-			StrImmediate
+			StrImmediateT1
 		} else if opcode.code >> 11 == 0b10010 {
-			StrSpPlusImmediate
+			StrImmediateT2
 		} else if opcode.code >> 9 == 0b0101000 {
-			StrRegister
+			StrRegisterT1
 		} else if opcode.code >> 11 == 0b01110 {
-			StrbImmediate
+			StrbImmediateT1
 		} else if opcode.code >> 9 == 0b0101010 {
-			StrbRegister
+			StrbRegisterT1
 		} else if opcode.code >> 11 == 0b10000 {
-			StrhImmediate
+			StrhImmediateT1
 		} else if opcode.code >> 9 == 0b0101001 {
-			StrhRegister
+			StrhRegisterT1
 		} else if opcode.code >> 7 == 0b101100001 {
-			SubSpMinusImmediate
+			SubSpMinusImmediateT1
 		} else if opcode.code >> 9 == 0b0001111 {
-			SubsT1
+			SubT1
 		} else if opcode.code >> 11 == 0b00111 {
-			SubsT2
+			SubT2
 		} else if opcode.code >> 9 == 0b0001101 {
-			SubsRegister
+			SubRegisterT1
 		} else if opcode.code >> 8 == 0b11011111 {
-			Svc
+			SvcT1
 		} else if opcode.code >> 6 == 0b1011001001 {
-			Sxtb
+			SxtbT1
 		} else if opcode.code >> 6 == 0b1011001000 {
-			Sxth
+			SxthT1
 		} else if opcode.code >> 6 == 0b0100001000 {
-			Tst
+			TstRegisterT1
 		} else if opcode.code >> 8 == 0b11011110 {
-			Udf
+			UdfT1
 		} else if opcode.code >> 4 == 0b111101111111 && opcode_2.code >> 12 == 0b1010 {
 			UdfT2
 		} else if opcode.code >> 6 == 0b1011001011 {
-			Uxtb
+			UxtbT1
 		} else if opcode.code >> 6 == 0b1011001010 {
-			Uxth
+			UxthT1
 		} else if opcode.code == 0b1011111100100000 {
-			Wfe
+			WfeT1
 		} else if opcode.code == 0b1011111100110000 {
-			Wfi
+			WfiT1
 		} else if opcode.code == 0b1011111100010000 {
-			Yield
+			YieldT1
 		} else {
 			unimplemented!("Instruction not implemented, file a github issue.");
 		};
@@ -300,15 +301,23 @@ impl Instruction {
 
 
 		match self.instruction {
-			Adcs => {},
-			AddRegisterSpPlusImmediate => {
+			AdcT1 => {
+				let rm = (opcode >> 3) & 0x7;
+				let rdn = opcode & 0x7;
+
+				let rm_value = rp2350.cortex_m33.get_register_from_number(rm).get();
+				let rdn_value = rp2350.cortex_m33.get_register_from_number(rdn).get() + rp2350.cortex_m33.apsr.c() as u32;
+				let result = add_instruction_update_flags(&mut rp2350.cortex_m33.apsr, rm_value, rdn_value, false);
+				rp2350.cortex_m33.get_register_from_number(rdn).set(result);
+			},
+			AddSpPlusImmediateT1 => {
 				let imm8: u32 = opcode as u32 & 0xff;
 				let rd = (opcode >> 8) & 0x7;
 
 				let sp = rp2350.cortex_m33.registers.sp.get();
 				rp2350.cortex_m33.get_register_from_number(rd).set(sp + (imm8 << 2))
 			},
-			AddSpPlusImmediate => {
+			AddSpPlusImmediateT2 => {
 				let imm32 = (opcode as u32 & 0x7f) << 2;
 				rp2350.cortex_m33.registers.sp.set(rp2350.cortex_m33.registers.sp.get() + imm32);
 			},
@@ -329,7 +338,7 @@ impl Instruction {
       			let result = add_instruction_update_flags(&mut rp2350.cortex_m33.apsr, rdn_value, imm8 as u32, false);
       			rp2350.cortex_m33.get_register_from_number(rdn).set(result);
 			},
-			AddsRegister => {
+			AddRegisterT1 => {
 				let rm = (opcode >> 6) & 0x7;
 				let rn = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
@@ -339,7 +348,7 @@ impl Instruction {
       			let result = add_instruction_update_flags(&mut rp2350.cortex_m33.apsr, rn_value, rm_value, false);
       			rp2350.cortex_m33.get_register_from_number(rd).set(result);
 			},
-			AddRegister => {
+			AddRegisterT2 => {
 				let rdn = ((opcode & 0x80) >> 4) | (opcode & 0x7);
 				let left_value = {
 					let rdn = rp2350.cortex_m33.get_register_from_number(rdn);
@@ -361,25 +370,49 @@ impl Instruction {
 					rdn.set(result & !0x3)
 				}
 			},
-			Adr => {
+			AdrT1 => {
 				let imm8 = opcode as u32 & 0xff;
 				let rd = (opcode >> 8) & 0x7;
 
 				rp2350.cortex_m33.get_register_from_number(rd).set((opcode_pc & 0xfffffffc) + 4 + (imm8 << 2));
 			},
-			AndsT2 => {
+			AndRegisterT1 => {
+				let rdn = get_bits(opcode, 0..3);
+				let rm = get_bits(opcode, 3..6);
+				let rm_value = rp2350.cortex_m33.get_register_from_number(rm).get();
+				let (shifted, carry) = shift_c(rm_value, SRType::Lsl, 0, rp2350.cortex_m33.apsr.c());
+
+				let rdn = rp2350.cortex_m33.get_register_from_number(rdn);
+				let result = rdn.get() & shifted;
+				rdn.set(result);
+
+				rp2350.cortex_m33.apsr.set_n(get_bit(result, 31));
+				rp2350.cortex_m33.apsr.set_z(is_zero_bit(result));
+				rp2350.cortex_m33.apsr.set_c(carry);
+			},
+			AsrImmediateT1 => {
+				let rd = get_bits(opcode, 0..3);
+				let rm = get_bits(opcode, 3..6);
+				let imm5 = get_bits(opcode, 6..11);
+
+				let (_, shift_n) = decode_imm_shift(u2::new(10), imm5);
+
+				let rm = rp2350.cortex_m33.get_register_from_number(rm).get();
+
+				let (result, carry) = shift_c(rm, SRType::Asr, shift_n, rp2350.cortex_m33.apsr.c());
+				rp2350.cortex_m33.get_register_from_number(rd).set(result);
+
+				rp2350.cortex_m33.apsr.set_n(get_bit(result, 31));
+				rp2350.cortex_m33.apsr.set_z(is_zero_bit(result));
+				rp2350.cortex_m33.apsr.set_c(carry);
+			},
+			AsrRegisterT1 => {
 				todo!();
 			},
-			AsrsImmediate => {
+			BT1 => {
 				todo!();
 			},
-			AsrsRegister => {
-				todo!();
-			},
-			BWithCondition => {
-				todo!();
-			},
-			B => {
+			BT2 => {
 				let opcode = opcode as i32;
 				let mut imm11 = (opcode & 0x7ff) << 1;
 				if imm11 & (1 << 11) > 0 {
@@ -391,13 +424,13 @@ impl Instruction {
 				
 				rp2350.cortex_m33.registers.pc.set(value as u32);
 			},
-			Bics => {
+			BicRegisterT1 => {
 				todo!();
 			},
-			Bkpt => {
+			BkptT1 => {
 				todo!();
 			},
-			Bl => {
+			BlT1 => {
 				let opcode = opcode as i32;
 				let opcode_2 = opcode_2.code as i32;
 
@@ -421,44 +454,44 @@ impl Instruction {
 				let pc_value = rp2350.cortex_m33.registers.pc.get() as i32 + 2 + imm32;
 				rp2350.cortex_m33.registers.pc.set(pc_value as u32);
 			},
-			Blx => {
+			BlxT1 => {
 				let rm = (opcode >> 3) & 0xf;
 				rp2350.cortex_m33.registers.lr.set(rp2350.cortex_m33.registers.pc.get() | 0x1);
 				let rm_value = rp2350.cortex_m33.get_register_from_number(rm).get();
 				rp2350.cortex_m33.registers.pc.set(rm_value & !1);
 			},
-			Bx => {
+			BxT1 => {
 				todo!();
 			},
-			CmnRegister => {
+			CmnRegisterT1 => {
 				todo!();
 			},
-			CmpImmediate => {
+			CmpImmediateT1 => {
 				todo!();
 			},
-			CmpRegister => {
+			CmpRegisterT1 => {
 				todo!();
 			},
 			CmpRegisterT2 => {
 				todo!();
 			},
-			CpsidI => {
+			CpsT1Id => {
 				todo!();
 			},
-			CpsieI => {
+			CpsT1Ie => {
 				todo!();
 			},
-			DmbSy => {
+			DmbT1Sy => {
 				rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 			},
-			DsbSy => {
+			DsbT1Sy => {
 				rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 			},
-			Eors => {},
-			IsbSy => {
+			EorRegisterT1 => {},
+			IsbT1Sy => {
 				rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 			},
-			Ldmia => {
+			LdmiaT1 => {
 				let rn = (opcode >> 8) & 0x7;
 				let registers = opcode & 0xff;
 				let mut address = rp2350.cortex_m33.get_register_from_number(rn).get();
@@ -475,49 +508,49 @@ impl Instruction {
 					rp2350.cortex_m33.get_register_from_number(rn).set(address);
 				}
 			},
-			LdrImmediate => {
+			LdrImmediateT1 => {
 				todo!();
 			},
-			LdrSpPlusImmediate => {
+			LdrImmediateT2 => {
 				todo!();
 			},
-			LdrLiteral => {
+			LdrLiteralT1 => {
 				todo!();
 			},
-			LdrRegister => {
+			LdrRegisterT1 => {
 				todo!();
 			},
-			LdrbImmediate => {
+			LdrbImmediateT1 => {
 				todo!();
 			},
-			LdrbRegister => {
+			LdrbRegisterT1 => {
 				todo!();
 			},
-			LdrhImmediate => {
+			LdrhImmediateT1 => {
 				todo!();
 			},
-			LdrhRegister => {
+			LdrhRegisterT1 => {
 				todo!();
 			},
-			Ldrsb => {
+			LdrsbRegisterT1 => {
 				todo!();
 			},
-			Ldrsh => {
+			LdrshRegisterT1 => {
 				todo!();
 			},
-			LslsImmediate => {
+			LslImmediateT1 => {
 				todo!();
 			},
-			LslsRegister => {
+			LslRegisterT1 => {
 				todo!();
 			},
-			LsrsImmediate => {
+			LsrImmediateT1 => {
 				todo!();
 			},
-			LsrsRegister => {
+			LsrRegisterT1 => {
 				todo!();
 			},
-			Mov => {
+			MovRegisterT1 => {
 				let rm = (opcode >> 3) & 0xf;
 				let rd = ((opcode >> 4) & 0x8) | (opcode & 0x7);
 
@@ -534,28 +567,28 @@ impl Instruction {
 
 				rd.set(value);
 			},
-			Movs => {
+			MovImmediateT1 => {
 				todo!();
 			},
-			Mrs => {
+			MrsT1 => {
 				todo!();
 			},
-			Msr => {
+			MsrT1 => {
 				todo!();
 			},
-			Muls => {
+			MulT1 => {
 				todo!();
 			},
-			Mvns => {
+			MvnT1 => {
 				todo!();
 			},
-			OrrsT2 => {
+			OrrRegisterT1 => {
 				todo!();
 			},
-			Pop => {
+			PopT1 => {
 				todo!();
 			},
-			Push => {
+			PushT1 => {
 				let mut bitcount = 0;
 				for i in 0..=8 {
 					if self.opcode.code & (1 << i) > 0 {
@@ -582,7 +615,7 @@ impl Instruction {
 				let current_sp = rp2350.cortex_m33.registers.sp.get();
 				rp2350.cortex_m33.registers.sp.set(current_sp - 4 * bitcount);
 			},
-			Rev => {
+			RevT1 => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
 				let input = rp2350.cortex_m33.get_register_from_number(rm).get();
@@ -593,7 +626,7 @@ impl Instruction {
 					((input >> 24) & 0xff)
 				)
 			},
-			Rev16 => {
+			Rev16T1 => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
 				let input = rp2350.cortex_m33.get_register_from_number(rm).get();
@@ -604,21 +637,21 @@ impl Instruction {
 					((input >> 8) & 0xff)
 				)
 			},
-			Revsh => {
+			RevshT1 => {
 				todo!();
 			},
-			Ror => {
+			RorRegisterT1 => {
 				todo!();
 			},
-			Negs => {
+			RsbImmediateT1 => {
 				todo!();
 			},
-			Nop => {
+			NopT1 => {
 				// Do nothing
 			},
-			SbcsT1 => {},
-			Sev => {},
-			Stmia => {
+			SbcRegisterT1 => {},
+			SevT1 => {},
+			StmiaT1 => {
 				let rn = (opcode >> 8) & 0x7;
 				let registers = opcode & 0xff;
 				let mut address = rp2350.cortex_m33.get_register_from_number(rn).get();
@@ -634,77 +667,77 @@ impl Instruction {
 					rp2350.cortex_m33.get_register_from_number(rn).set(address);
 				}
 			},
-			StrImmediate => {
+			StrImmediateT1 => {
 				todo!();
 			},
-			StrSpPlusImmediate => {
+			StrImmediateT2 => {
 				todo!();
 			},
-			StrRegister => {
+			StrRegisterT1 => {
 				todo!();
 			},
-			StrbImmediate => {
+			StrbImmediateT1 => {
 				todo!();
 			},
-			StrbRegister => {
+			StrbRegisterT1 => {
 				todo!();
 			},
-			StrhImmediate => {
+			StrhImmediateT1 => {
 				todo!();
 			},
-			StrhRegister => {
+			StrhRegisterT1 => {
 				todo!();
 			},
-			SubSpMinusImmediate => {
+			SubSpMinusImmediateT1 => {
 				let imm32 = (opcode & 0x7f) << 2;
 				rp2350.cortex_m33.registers.sp.set(rp2350.cortex_m33.registers.sp.get() - imm32 as u32);
 			},
-			SubsT1 => {
+			SubT1 => {
 				todo!();
 			},
-			SubsT2 => {
+			SubT2 => {
 				todo!();
 			},
-			SubsRegister => {
+			SubRegisterT1 => {
 				todo!();
 			},
-			Svc => {
+			SvcT1 => {
 				todo!();
 			},
-			Sxtb => {
+			SxtbT1 => {
 				todo!();
 			},
-			Sxth => {
+			SxthT1 => {
 				todo!();
 			},
-			Tst => {
+			TstRegisterT1 => {
 				todo!();
 			},
-			Udf => {
+			UdfT1 => {
 				todo!();
 			},
 			UdfT2 => {
 				todo!();
 			},
-			Uxtb => {
+			UxtbT1 => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
 				let value = rp2350.cortex_m33.get_register_from_number(rm).get() & 0xff;
 				rp2350.cortex_m33.get_register_from_number(rd).set(value);
 			},
-			Uxth => {
+			UxthT1 => {
 				let rm = (opcode >> 3) & 0x7;
 				let rd = opcode & 0x7;
 				let value = rp2350.cortex_m33.get_register_from_number(rm).get() & 0xffff;
 				rp2350.cortex_m33.get_register_from_number(rd).set(value);
 			},
-			Wfe => {
+			WfeT1 => {
 				todo!();
 			},
-			Wfi => {
+			WfiT1 => {
 				todo!();
 			},
-			Yield => {
+			YieldT1 => {
 				// Do nothing, wait for an event
 			},
 		}
