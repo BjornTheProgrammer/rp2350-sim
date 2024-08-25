@@ -35,29 +35,29 @@ mod tests {
         }
     }
 
-    struct Push;
-    impl Push {
+    struct PushT1;
+    impl PushT1 {
         fn opcode<T: cortex_m33::registers::SpControl>(push_to_lr: bool, registers: Registers<T>) -> u16 {
             return (0b1011010 << 9) | ((push_to_lr as u16) << 8) | registers.binary();
         }
     }
 
-    struct Adcs;
-    impl Adcs {
+    struct AdcT1;
+    impl AdcT1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rdn: Register<T>, rm: Register<U>) -> u16 {
             return (0b0100000101 << 6) | ((rm.number() & 7) << 3) | (rdn.number() & 7);
         }
     }
 
-    struct AddSpPlusImmediate;
-    impl AddSpPlusImmediate {
+    struct AddSpPlusImmediateT2;
+    impl AddSpPlusImmediateT2 {
         fn opcode(imm: u16) -> u16 {
             return (0b101100000 << 7) | ((imm >> 2) & 0x7f);
         }
     }
 
-    struct AddRegisterSpPlusImmediate;
-    impl AddRegisterSpPlusImmediate {
+    struct AddSpPlusImmediateT1;
+    impl AddSpPlusImmediateT1 {
         // rd is the register number
         fn opcode<T: cortex_m33::registers::SpControl>(rd: Register<T>, imm8: u16) -> u16 {
             return (0b10101 << 11) | ((rd.number() & 7) << 8) | ((imm8 >> 2) & 0xff);
@@ -78,29 +78,29 @@ mod tests {
         }
     }
 
-    struct AddsRegister;
-    impl AddsRegister {
+    struct AddsRegisterT1;
+    impl AddsRegisterT1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl, V: cortex_m33::registers::SpControl>(rd: Register<T>, rn: Register<U>, rm: Register<V>) -> u16 {
             return (0b0001100 << 9) | ((rm.number() & 0x7) << 6) | ((rn.number() & 7) << 3) | (rd.number() & 7);
         }
     }
 
-    struct AddRegister;
-    impl AddRegister {
+    struct AddRegisterT2;
+    impl AddRegisterT2 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rdn: Register<T>, rm: Register<U>) -> u16 {
             return (0b01000100 << 8) | ((rdn.number() & 0x8) << 4) | ((rm.number() & 0xf) << 3) | (rdn.number() & 0x7);
         }
     }
 
-    struct Adr;
-    impl Adr {
+    struct AdrT1;
+    impl AdrT1 {
         fn opcode<T: cortex_m33::registers::SpControl>(rd: Register<T>, imm8: u16) -> u16 {
             return (0b10100 << 11) | ((rd.number() & 7) << 8) | ((imm8 >> 2) & 0xff);
         }
     }
 
-    struct AndsT1;
-    impl AndsT1 {
+    struct AndRegisterT1;
+    impl AndRegisterT1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rn: Register<T>, rm: Register<U>) -> u16 {
             return (0b0100000000 << 6) | ((rm.number() & 7) << 3) | (rn.number() & 0x7);
         }
@@ -113,29 +113,29 @@ mod tests {
         }
     }
 
-    struct DmbSy;
-    impl DmbSy {
+    struct DmbT1Sy;
+    impl DmbT1Sy {
         fn opcode() -> u32 {
             return 0x8f50f3bf;
         }
     }
 
-    struct DsbSy;
-    impl DsbSy {
+    struct DsbT1Sy;
+    impl DsbT1Sy {
         fn opcode() -> u32 {
             return 0x8f4ff3bf;
         }
     }
 
-    struct IsbSy;
-    impl IsbSy {
+    struct IsbT1Sy;
+    impl IsbT1Sy {
         fn opcode() -> u32 {
             return 0x8f6ff3bf;
         }
     }
 
-    struct Mov;
-    impl Mov {
+    struct MovRegisterT1;
+    impl MovRegisterT1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rd: Register<T>, rm: Register<U>) -> u16 {
             let bit = if rd.number() & 0x8 > 0 {
                 1
@@ -147,64 +147,64 @@ mod tests {
         }
     }
 
-    struct Ldmia;
-    impl Ldmia {
+    struct LdmiaT1;
+    impl LdmiaT1 {
         fn opcode<T: cortex_m33::registers::SpControl>(rn: Register<T>, registers: Registers<T>) -> u16 {
             return (0b11001 << 11) | ((rn.number() & 0x7) << 8) | (registers.binary() & 0xff);
         }
     }
 
-    struct Rev;
-    impl Rev {
+    struct RevT1;
+    impl RevT1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rd: Register<T>, rn: Register<U>) -> u16 {
             return (0b1011101000 << 6) | ((rn.number() & 0x7) << 3) | (rd.number() & 0x7);
         }
     }
 
-    struct Rev16;
-    impl Rev16 {
+    struct Rev16T1;
+    impl Rev16T1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rd: Register<T>, rn: Register<U>) -> u16 {
             return (0b1011101001 << 6) | ((rn.number() & 0x7) << 3) | (rd.number() & 0x7);
         }
     }
 
-    struct Stmia;
-    impl Stmia {
+    struct StmiaT1;
+    impl StmiaT1 {
         fn opcode<T: cortex_m33::registers::SpControl>(rn: Register<T>, registers: Registers<T>) -> u16 {
             return (0b11000 << 11) | ((rn.number() & 0x7) << 8) | (registers.binary() & 0xff);
         }
     }
 
-    struct SubSpMinusImmediate;
-    impl SubSpMinusImmediate {
+    struct SubSpMinusImmediateT1;
+    impl SubSpMinusImmediateT1 {
         fn opcode(imm: u16) -> u16 {
             return (0b101100001 << 7) | ((imm >> 2) & 0x7f);
         }
     }
 
-    struct Uxtb;
-    impl Uxtb {
+    struct UxtbT1;
+    impl UxtbT1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rd: Register<T>, rm: Register<U>) -> u16 {
             return (0b1011001011 << 6) | ((rm.number() & 7) << 3) | (rd.number() & 7);
         }
     }
 
-    struct Uxth;
-    impl Uxth {
+    struct UxthT1;
+    impl UxthT1 {
         fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rd: Register<T>, rm: Register<U>) -> u16 {
             return (0b1011001010 << 6) | ((rm.number() & 7) << 3) | (rd.number() & 7);
         }
     }
 
-    struct Yield;
-    impl Yield {
+    struct YieldT1;
+    impl YieldT1 {
         fn opcode() -> u16 {
             return 0b1011111100010000;
         }
     }
 
-    struct Bl;
-    impl Bl {
+    struct BlT1;
+    impl BlT1 {
         fn opcode(imm: i32) -> u32 {
             let imm11 = (imm >> 1) & 0x7ff;
             let imm10 = (imm >> 12) & 0x3ff;
@@ -216,8 +216,8 @@ mod tests {
         }
     }
 
-    struct Blx;
-    impl Blx {
+    struct BlxT1;
+    impl BlxT1 {
         fn opcode<T: cortex_m33::registers::SpControl>(rm: Register<T>) -> u16 {
             return (0b010001111 << 7) | (rm.number() << 3);
         }
@@ -229,7 +229,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Adcs::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r4));
+        rp2350.write_to_address(RAM_START_ADDRESS, AdcT1::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r4));
         rp2350.cortex_m33.registers.r4.set(55);
         rp2350.cortex_m33.registers.r5.set(66);
         rp2350.cortex_m33.apsr.set_c(true);
@@ -249,7 +249,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Adcs::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r4));
+        rp2350.write_to_address(RAM_START_ADDRESS, AdcT1::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r4));
         rp2350.cortex_m33.registers.r4.set(0x7fffffff); // Max signed INT32
         rp2350.cortex_m33.registers.r5.set(0);
         rp2350.cortex_m33.apsr.set_c(true);
@@ -269,7 +269,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Adcs::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r2));
+        rp2350.write_to_address(RAM_START_ADDRESS, AdcT1::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r2));
         rp2350.cortex_m33.registers.r2.set(0); // Max signed INT32
         rp2350.cortex_m33.registers.r3.set(0);
         rp2350.cortex_m33.apsr.set_c(true);
@@ -290,7 +290,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Adcs::opcode(rp2350.cortex_m33.registers.r0, rp2350.cortex_m33.registers.r0));
+        rp2350.write_to_address(RAM_START_ADDRESS, AdcT1::opcode(rp2350.cortex_m33.registers.r0, rp2350.cortex_m33.registers.r0));
         rp2350.cortex_m33.registers.r0.set(0x80000000); // Max signed INT32
         rp2350.cortex_m33.apsr.set_c(false);
 
@@ -310,7 +310,7 @@ mod tests {
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
         rp2350.cortex_m33.registers.sp.set(0x10000040);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, AddSpPlusImmediate::opcode(0x10));
+        rp2350.write_to_address(RAM_START_ADDRESS, AddSpPlusImmediateT2::opcode(0x10));
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.sp.get(), 0x10000050)
@@ -323,7 +323,7 @@ mod tests {
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
         rp2350.cortex_m33.registers.sp.set(0x54);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, AddRegisterSpPlusImmediate::opcode(rp2350.cortex_m33.registers.r1, 0x10));
+        rp2350.write_to_address(RAM_START_ADDRESS, AddSpPlusImmediateT1::opcode(rp2350.cortex_m33.registers.r1, 0x10));
         rp2350.cortex_m33.registers.r1.set(0);
         rp2350.execute_instruction();
 
@@ -374,7 +374,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, AddsRegister::opcode(rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r2, rp2350.cortex_m33.registers.r7));
+        rp2350.write_to_address(RAM_START_ADDRESS, AddsRegisterT1::opcode(rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r2, rp2350.cortex_m33.registers.r7));
         rp2350.cortex_m33.registers.r2.set(2);
         rp2350.cortex_m33.registers.r7.set(27);
 
@@ -393,7 +393,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, AddsRegister::opcode(rp2350.cortex_m33.registers.r4, rp2350.cortex_m33.registers.r4, rp2350.cortex_m33.registers.r2));
+        rp2350.write_to_address(RAM_START_ADDRESS, AddsRegisterT1::opcode(rp2350.cortex_m33.registers.r4, rp2350.cortex_m33.registers.r4, rp2350.cortex_m33.registers.r2));
         rp2350.cortex_m33.registers.r2.set(0x74bc8000);
         rp2350.cortex_m33.registers.r4.set(0x43740000);
 
@@ -412,7 +412,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, AddsRegister::opcode(rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r1));
+        rp2350.write_to_address(RAM_START_ADDRESS, AddsRegisterT1::opcode(rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r1));
         rp2350.cortex_m33.registers.r1.set(0xbf8d1424);
         rp2350.cortex_m33.apsr.set_c(true);
 
@@ -431,7 +431,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, AddRegister::opcode(rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r12));
+        rp2350.write_to_address(RAM_START_ADDRESS, AddRegisterT2::opcode(rp2350.cortex_m33.registers.r1, rp2350.cortex_m33.registers.r12));
         rp2350.cortex_m33.registers.r1.set(66);
         rp2350.cortex_m33.registers.r12.set(44);
 
@@ -446,7 +446,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Adr::opcode(rp2350.cortex_m33.registers.r4, 0x50));
+        rp2350.write_to_address(RAM_START_ADDRESS, AdrT1::opcode(rp2350.cortex_m33.registers.r4, 0x50));
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r4.get(), 0x20000054);
@@ -458,7 +458,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, AndsT1::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r0));
+        rp2350.write_to_address(RAM_START_ADDRESS, AndRegisterT1::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r0));
         rp2350.cortex_m33.registers.r5.set(0xffff0000);
         rp2350.cortex_m33.registers.r0.set(0xf00fffff);
         rp2350.execute_instruction();
@@ -486,7 +486,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Bl::opcode(0x34));
+        rp2350.write_to_address(RAM_START_ADDRESS, BlT1::opcode(0x34));
 
         rp2350.execute_instruction();
 
@@ -500,7 +500,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Bl::opcode(-0x10));
+        rp2350.write_to_address(RAM_START_ADDRESS, BlT1::opcode(-0x10));
 
         rp2350.execute_instruction();
 
@@ -514,7 +514,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Bl::opcode(-3242));
+        rp2350.write_to_address(RAM_START_ADDRESS, BlT1::opcode(-3242));
 
         rp2350.execute_instruction();
 
@@ -529,7 +529,7 @@ mod tests {
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
         rp2350.cortex_m33.registers.r3.set(0x20000201);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Blx::opcode(rp2350.cortex_m33.registers.r3));
+        rp2350.write_to_address(RAM_START_ADDRESS, BlxT1::opcode(rp2350.cortex_m33.registers.r3));
 
         rp2350.execute_instruction();
 
@@ -543,7 +543,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, DmbSy::opcode());
+        rp2350.write_to_address(RAM_START_ADDRESS, DmbT1Sy::opcode());
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000004);
@@ -555,7 +555,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, DsbSy::opcode());
+        rp2350.write_to_address(RAM_START_ADDRESS, DsbT1Sy::opcode());
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000004);
@@ -567,7 +567,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, IsbSy::opcode());
+        rp2350.write_to_address(RAM_START_ADDRESS, IsbT1Sy::opcode());
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000004);
@@ -583,7 +583,7 @@ mod tests {
             rp2350.cortex_m33.registers.r2
         ];
 
-        let opcode = Ldmia::opcode(rp2350.cortex_m33.registers.r0, registers.into());
+        let opcode = LdmiaT1::opcode(rp2350.cortex_m33.registers.r0, registers.into());
         rp2350.write_to_address(RAM_START_ADDRESS, opcode);
         rp2350.cortex_m33.registers.r0.set(0x20000010);
 
@@ -604,7 +604,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Mov::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r8));
+        rp2350.write_to_address(RAM_START_ADDRESS, MovRegisterT1::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r8));
         rp2350.cortex_m33.registers.r8.set(55);
         rp2350.execute_instruction();
 
@@ -617,7 +617,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Mov::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.pc));
+        rp2350.write_to_address(RAM_START_ADDRESS, MovRegisterT1::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.pc));
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r3.get(), 0x20000004);
@@ -635,7 +635,7 @@ mod tests {
             rp2350.cortex_m33.registers.r5,
             rp2350.cortex_m33.registers.r6
         ];
-        let binary = Push::opcode(true, registers.into());
+        let binary = PushT1::opcode(true, registers.into());
 
         rp2350.write_to_address(RAM_START_ADDRESS, binary);
 
@@ -659,7 +659,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
         
-        rp2350.write_to_address(RAM_START_ADDRESS, Rev::opcode(rp2350.cortex_m33.registers.r2, rp2350.cortex_m33.registers.r3));
+        rp2350.write_to_address(RAM_START_ADDRESS, RevT1::opcode(rp2350.cortex_m33.registers.r2, rp2350.cortex_m33.registers.r3));
         
         rp2350.cortex_m33.registers.r3.set(0x11223344);
         
@@ -674,7 +674,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
         
-        rp2350.write_to_address(RAM_START_ADDRESS, Rev16::opcode(rp2350.cortex_m33.registers.r0, rp2350.cortex_m33.registers.r5));
+        rp2350.write_to_address(RAM_START_ADDRESS, Rev16T1::opcode(rp2350.cortex_m33.registers.r0, rp2350.cortex_m33.registers.r5));
         
         rp2350.cortex_m33.registers.r5.set(0x11223344);
         
@@ -694,7 +694,7 @@ mod tests {
             rp2350.cortex_m33.registers.r2,
         ];
         
-        rp2350.write_to_address(RAM_START_ADDRESS, Stmia::opcode(rp2350.cortex_m33.registers.r0, registers.into()));
+        rp2350.write_to_address(RAM_START_ADDRESS, StmiaT1::opcode(rp2350.cortex_m33.registers.r0, registers.into()));
         
         rp2350.cortex_m33.registers.r0.set(0x20000010);
         rp2350.cortex_m33.registers.r1.set(0xf00df00d);
@@ -715,7 +715,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, SubSpMinusImmediate::opcode(0x10));
+        rp2350.write_to_address(RAM_START_ADDRESS, SubSpMinusImmediateT1::opcode(0x10));
         
         rp2350.cortex_m33.registers.sp.set(0x10000040);
 
@@ -730,7 +730,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Uxtb::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r3));
+        rp2350.write_to_address(RAM_START_ADDRESS, UxtbT1::opcode(rp2350.cortex_m33.registers.r5, rp2350.cortex_m33.registers.r3));
         
         rp2350.cortex_m33.registers.r3.set(0x12345678);
 
@@ -745,7 +745,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Uxth::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r1));
+        rp2350.write_to_address(RAM_START_ADDRESS, UxthT1::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r1));
         
         rp2350.cortex_m33.registers.r1.set(0x12345678);
 
@@ -759,7 +759,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, Yield::opcode());
+        rp2350.write_to_address(RAM_START_ADDRESS, YieldT1::opcode());
 
         rp2350.execute_instruction();
 
