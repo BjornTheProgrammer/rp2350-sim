@@ -8,3 +8,4 @@ derive_more = { version = "1.0.0", features = ["full"] }
 anyhow = "1.0"
 num-traits = "0.2"
 bilge = "0.2.0"
+paste = "1.0.15"

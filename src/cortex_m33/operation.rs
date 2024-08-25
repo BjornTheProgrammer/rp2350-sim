@@ -1,8 +1,6 @@
 use core::ops::Range;
 use bilge::prelude::*;
 
-pub fn thing(value: u16, ) {}
-
 pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
 	let overflow_x_and_y = x.overflowing_add(y);
 	let unsigned_sum = (carry_in as u32).overflowing_add(overflow_x_and_y.0);
@@ -17,19 +15,35 @@ pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
 
 // 0b0100000000111110, 0..3  -  0b110
 // 0b0100000000111110, 3..6  -  0b111
-pub fn get_bits<V: num_traits::PrimInt + num_traits::ToBytes>(value: V, range: Range<usize>) -> V {
-	let size = value.to_be_bytes().as_ref().len() * 8;
-	
+pub fn get_bits<V: num_traits::PrimInt>(value: V, range: Range<usize>) -> V {
 	let shifted = value >> range.start.into();
 	let mask: V = (V::one() << (range.end - range.start)) - V::one();
 	shifted & mask
+}
+
+pub fn set_bit<V: num_traits::PrimInt + derive_more::Debug>(value: &mut V, bit_index: usize, bit: bool) {
+	assert!(bit_index < get_size_of_number(*value));
+
+	if bit {
+		*value = *value | (V::one() << bit_index);
+	} else {
+		*value = *value & !(V::one() << bit_index);
+	}
+}
+
+pub fn set_bits<V: num_traits::PrimInt + derive_more::Debug>(value: &mut V, range: Range<usize>, bits: u32, bits_len: usize) {
+	let range = range;
+	let start = range.start;
+	for i in range {
+		set_bit(value, i, get_bit(bits, (i - start) % bits_len));
+	}
 }
 
 pub fn is_zero_bit(x: u32) -> bool {
 	x == 0
 }
 
-pub fn get_bit<V: num_traits::PrimInt + derive_more::Debug + derive_more::Binary>(value: V, bit: usize) -> bool {
+pub fn get_bit<V: num_traits::PrimInt>(value: V, bit: usize) -> bool {
 	assert!(bit < 32);
 
 	let mask = V::one() << bit.into();
@@ -60,14 +74,96 @@ pub fn lsr_c(value: u32, amount: usize) -> (u32, bool) {
 	(result, carry_out)
 }
 
-pub fn asr_c(value: u32, amount: usize) -> (u32, bool) {
-	assert!(amount > 0);
 
-	let value = value as i32;
-	let carry_out = (value & (1 << (amount - 1))) != 0;
-	let result = (value >> amount) as u32;
 
-	(result, carry_out)
+// macro_rules! sign_extend {
+// 	($number:expr, $shift:expr) => {
+// 		let size = get_size_of_number($number);
+		
+// 		sign_extend!($number, $shift, size);
+// 	};
+
+// 	($number:expr, $shift:expr, $size:tt) => {
+// 		use paste::paste;
+// 		paste! {
+// 			let extended = match sign_extend($number, $size + $shift) {
+// 				[<S i g n E x t e n d e d>]::[<U 8>](val) => val,
+// 				_ => unreachable!(),
+// 			};
+// 		}
+// 	};
+// }
+
+pub fn asr_c(value: u32, shift: usize) -> (u32, bool) {
+	assert!(shift > 0);
+	// sign_extend!(value, shift);
+
+	let extended = match sign_extend(value, 32 + shift) {
+		SignExtended::U64(val) => val,
+		_ => unreachable!(),
+	};
+
+	let result = get_bits(extended, shift..shift + 32) as u32;
+	let carry = get_bit(extended, shift - 1);
+
+	(result, carry)
+}
+
+pub fn get_lsb<N: num_traits::PrimInt>(n: N) -> N {
+	n & N::one()
+}
+
+pub fn get_size_of_number<N: num_traits::PrimInt>(_n: N) -> usize {
+	std::mem::size_of::<N>() * 8
+}
+
+pub fn get_msb<N: num_traits::PrimInt>(n: N) -> bool {
+	let shift = get_size_of_number(n) - 1;
+	if (n >> shift) & N::one() == N::zero() { false } else { true }
+}
+
+#[derive(Debug)]
+pub enum SignExtended {
+	U8(u8),
+	U16(u16),
+	U32(u32),
+	U64(u64),
+	U128(u128),
+}
+
+// Will assign every bit to the left of start_size to the most significant bit.
+pub fn sign_extend<
+	V: num_traits::PrimInt
+	+ num_traits::AsPrimitive<u128>
+	+ num_traits::AsPrimitive<u64>
+	+ num_traits::AsPrimitive<u32>
+	+ num_traits::AsPrimitive<u16>
+	+ num_traits::AsPrimitive<u8> + derive_more::Debug
+>(value: V, len: usize) -> SignExtended {
+	let msb = match get_msb(value) {
+		true => 1,
+		false => 0,
+	};
+
+	let size = get_size_of_number(value);
+	let mut value = match len {
+		0..=8 => SignExtended::U8(value.as_()),
+		9..=16 => SignExtended::U16(value.as_()),
+		17..=32 => SignExtended::U32(value.as_()),
+		33..=64 => SignExtended::U64(value.as_()),
+		65..=128 => SignExtended::U128(value.as_()),
+		_ => SignExtended::U128(value.as_())
+	};
+	
+	match &mut value {
+		SignExtended::U8(ref mut value) => set_bits(value, size..len, msb, 1),
+		SignExtended::U16(ref mut value) => set_bits(value, size..len, msb, 1),
+		SignExtended::U32(ref mut value) => set_bits(value, size..len, msb, 1),
+		SignExtended::U64(ref mut value) => set_bits(value, size..len, msb, 1),
+		SignExtended::U128(ref mut value) => set_bits(value, size..len, msb, 1),
+	}
+	
+	value
 }
 
 pub fn ror_c(value: u32, amount: usize) -> (u32, bool) {

@@ -223,6 +223,13 @@ mod tests {
         }
     }
 
+    struct AsrImmediateT1;
+    impl AsrImmediateT1 {
+        fn opcode<T: cortex_m33::registers::SpControl, U: cortex_m33::registers::SpControl>(rd: Register<T>, rm: Register<U>, imm5: u16) -> u16 {
+            return (0b00010 << 11) | ((imm5 & 0x1f) << 6) | ((rm.number() & 0x7) << 3) | (rd.number() & 0x7);
+        }
+    }
+
     #[test]
     fn adcs() {
         // should execute `adcs r5, r4` instruction
@@ -466,6 +473,42 @@ mod tests {
         assert_eq!(rp2350.cortex_m33.registers.r5.get(), 0xf00f0000);
         assert_eq!(rp2350.cortex_m33.apsr.n(), true);
         assert_eq!(rp2350.cortex_m33.apsr.z(), false);
+    }
+
+    #[test]
+    fn asr_immediate_t1() {
+        // should execute an `asrs r3, r2, #31` instruction
+        let mut rp2350: RP2350 = RP2350::new();
+        rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
+
+        rp2350.write_to_address(RAM_START_ADDRESS, AsrImmediateT1::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r2, 31));
+        rp2350.cortex_m33.registers.r2.set(0x80000000);
+        rp2350.cortex_m33.apsr.set_c(true);
+        rp2350.execute_instruction();
+
+        assert_eq!(rp2350.cortex_m33.registers.r3.get(), 0xffffffff);
+        assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000002);
+        assert_eq!(rp2350.cortex_m33.apsr.n(), true);
+        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.apsr.c(), false);
+    }
+
+    #[test]
+    fn asr_immediate_t1_2() {
+        // should correctly update the carry flags when executing `asrs r3, r2, #32` instruction
+        let mut rp2350: RP2350 = RP2350::new();
+        rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
+
+        rp2350.write_to_address(RAM_START_ADDRESS, AsrImmediateT1::opcode(rp2350.cortex_m33.registers.r3, rp2350.cortex_m33.registers.r2, 0));
+        rp2350.cortex_m33.registers.r2.set(0x80000000);
+        rp2350.cortex_m33.apsr.set_c(false);
+        rp2350.execute_instruction();
+
+        assert_eq!(rp2350.cortex_m33.registers.r3.get(), 0xffffffff);
+        assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000002);
+        assert_eq!(rp2350.cortex_m33.apsr.n(), true);
+        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.apsr.c(), true);
     }
 
     #[test]

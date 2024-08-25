@@ -395,7 +395,7 @@ impl Instruction {
 				let rm = get_bits(opcode, 3..6);
 				let imm5 = get_bits(opcode, 6..11);
 
-				let (_, shift_n) = decode_imm_shift(u2::new(10), imm5);
+				let (_, shift_n) = decode_imm_shift(u2::new(0b10), imm5);
 
 				let rm = rp2350.cortex_m33.get_register_from_number(rm).get();
 
