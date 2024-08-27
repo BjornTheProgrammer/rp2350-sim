@@ -2,7 +2,6 @@
 mod tests {
     use assert_hex::assert_eq_hex;
     use rp2350_sim::cortex_m33::opcodes::*;
-    use rp2350_sim::cortex_m33::registers::Register;
     use rp2350_sim::{RAM_START_ADDRESS, RP2350};
 
     #[test]

@@ -5,7 +5,7 @@ use crate::cortex_m33::operation::{
 use crate::cortex_m33::operation::{get_bit, get_bits, is_zero_bit, shift_c, SRType};
 use crate::cortex_m33::registers;
 use crate::rp2350::RP2350;
-use crate::{rp2350, unpredictable};
+use crate::unpredictable;
 use bilge::prelude::*;
 
 #[derive(PartialEq, Copy, Clone, Debug)]
