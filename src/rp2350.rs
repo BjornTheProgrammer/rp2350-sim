@@ -40,8 +40,9 @@ impl<S: SpControl> RP2350<S> {
 	pub fn new() -> Self {
 		RP2350 {
 			sram: [0; KB_OF_RAM * 1024],
-			flash: Box::new([0xff; MB_OF_FLASH * 1024 * 1024]),
-			cortex_m33: CortexM33::new()
+			// The box has to be defined like this, cuz for whatever reason this causes stack overflows still in tests. https://github.com/rust-lang/rust/issues/53827
+			flash: vec![0xff; MB_OF_FLASH * 1024 * 1024].into_boxed_slice().try_into().unwrap(),
+			cortex_m33: CortexM33::new(),
 		}
 	}
 

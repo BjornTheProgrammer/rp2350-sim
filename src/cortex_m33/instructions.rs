@@ -1,4 +1,5 @@
-use crate::cortex_m33::operation::{add_with_carry, decode_imm_shift};
+use crate::cortex_m33::operation::{add_with_carry, branch_write_pc, condition_passed, decode_imm_shift, in_it_block, sign_extend, SignExtended};
+use crate::unpredictable;
 use bilge::prelude::*;
 use crate::cortex_m33::operation::{get_bit, get_bits, is_zero_bit, shift_c, SRType};
 use crate::cortex_m33::registers;
@@ -407,10 +408,42 @@ impl Instruction {
 				rp2350.cortex_m33.apsr.set_c(carry);
 			},
 			AsrRegisterT1 => {
-				todo!();
+				let rdn = get_bits(opcode, 0..=2);
+				let rm = get_bits(opcode, 3..=5);
+
+				let rm = rp2350.cortex_m33.get_register_from_number(rm).get();
+
+				let setflags = !in_it_block();
+
+				let shift_n = get_bits(rm as u16, 0..=7);
+				let (result, carry) = shift_c(rp2350.cortex_m33.get_register_from_number(rdn).get(), SRType::Asr, shift_n, rp2350.cortex_m33.apsr.c());
+				rp2350.cortex_m33.get_register_from_number(rdn).set(result);
+
+				println!("carry: {:?}", carry);
+
+				if setflags {
+					rp2350.cortex_m33.apsr.set_n(get_bit(result, 31));
+					rp2350.cortex_m33.apsr.set_z(is_zero_bit(result));
+					rp2350.cortex_m33.apsr.set_c(carry);
+				}
 			},
 			BT1 => {
-				todo!();
+				let cond = get_bits(opcode, 8..=11);
+				let imm8 = get_bits(opcode, 0..=7) << 1;
+
+				if in_it_block() { unpredictable!(); };
+
+				let imm32 = match sign_extend(imm8, 8, 32) {
+					SignExtended::U32(val) => val,
+					_ => unreachable!(),
+				} as i32;
+
+				if condition_passed(&rp2350.cortex_m33.apsr, cond) {
+					let pc_value = rp2350.cortex_m33.registers.pc.get();
+					branch_write_pc(&mut rp2350.cortex_m33.registers.pc, (pc_value as i32 + imm32) as u32);
+				}
+
+				rp2350.cortex_m33.registers.pc.set(rp2350.cortex_m33.registers.pc.get() + 2);
 			},
 			BT2 => {
 				let opcode = opcode as i32;
