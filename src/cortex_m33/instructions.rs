@@ -1,6 +1,5 @@
 use crate::cortex_m33::operation::{
-    add_with_carry, branch_write_pc, condition_passed, decode_imm_shift, in_it_block, sign_extend,
-    SignExtended,
+    add_with_carry, branch_write_pc, condition_passed, decode_imm_shift, in_it_block, last_in_it_block, sign_extend, SignExtended
 };
 use crate::cortex_m33::operation::{get_bit, get_bits, is_zero_bit, shift_c, SRType};
 use crate::cortex_m33::registers;
@@ -537,6 +536,9 @@ impl Instruction {
                 }
             }
             BkptT1 => {
+                let imm8 = get_bits(opcode, 0..=7);
+                let _imm32 = imm8 as u32;
+
                 todo!();
             }
             BlT1 => {
@@ -575,6 +577,12 @@ impl Instruction {
                 rp2350.cortex_m33.registers.pc.set(rm_value & !1);
             }
             BxT1 => {
+                let rm = get_bits(opcode, 3..=6);
+                if in_it_block() && !last_in_it_block() { unpredictable!(); }
+
+                let rm_value = rp2350.cortex_m33.get_register_from_number(rm).get();
+                if rm_value == 15 { unpredictable!(); }
+
                 todo!();
             }
             CmnRegisterT1 => {

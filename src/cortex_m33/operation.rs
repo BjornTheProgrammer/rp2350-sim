@@ -4,7 +4,7 @@ use std::ops::{Bound, RangeBounds};
 
 use super::{
     apsr::Apsr,
-    registers::{self, Register},
+    registers::{self, Register}, Mode,
 };
 
 pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
@@ -19,9 +19,7 @@ pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
     (unsigned_sum.0, carry_out, overflow)
 }
 
-// 0b0100000000111110, 0..3  -  0b110
-// 0b0100000000111110, 3..6  -  0b111
-pub fn get_bits<V: num_traits::PrimInt, R: RangeBounds<usize>>(value: V, range: R) -> V {
+pub fn unwind_bounds<V: num_traits::PrimInt, R: RangeBounds<usize>>(value: V, range: R) -> (usize, usize) {
     let start: Bound<&usize> = range.start_bound();
     let start = match start {
         Bound::Included(&start) => start,
@@ -39,6 +37,14 @@ pub fn get_bits<V: num_traits::PrimInt, R: RangeBounds<usize>>(value: V, range: 
         Bound::Excluded(&end) => end,
         Bound::Unbounded => get_size_of_number(value),
     };
+
+    (start, end)
+}
+
+// 0b0100000000111110, 0..3  -  0b110
+// 0b0100000000111110, 3..6  -  0b111
+pub fn get_bits<V: num_traits::PrimInt, R: RangeBounds<usize>>(value: V, range: R) -> V {
+    let (start, end) = unwind_bounds(value, range);
 
     let shifted = value >> start;
     let mask: V = (V::one() << (end - start)) - V::one();
@@ -200,6 +206,35 @@ pub fn get_msb<N: num_traits::PrimInt>(n: N) -> bool {
     } else {
         true
     }
+}
+
+pub fn last_in_it_block() -> bool {
+    false
+}
+
+pub fn is_ones<N: num_traits::PrimInt,  R: RangeBounds<usize>>(value: N, range: R) -> bool {
+    let (start, end) = unwind_bounds(value, range);
+
+    for i in start..end {
+        if get_bit(value, i) == false { return false }
+    }
+    
+    true
+}
+
+pub fn exception_return(ipsr: u8, current_mode: Mode, exc_return: u32) {
+    assert_eq!(current_mode, Mode::Handler);
+    if !is_ones(get_bits(exc_return, 4..27), 0..23) { unpredictable!(); }
+
+    let returning_exception_number = get_bits(ipsr, 0..5);
+    let nested_activation;
+}
+
+pub fn bx_write_pc<T: registers::SpControl>(pc: &mut Register<T>, current_mode: Mode, address: u32) {
+    if current_mode == Mode::Handler && get_bits(address, 28..=31) == 0b1111 {
+        exception_return()
+    }
+
 }
 
 #[derive(Debug)]
