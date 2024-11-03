@@ -39,7 +39,7 @@ impl Index<usize> for Nvic {
             5 => &self.ipr5,
             6 => &self.ipr6,
             7 => &self.ipr7,
-            _ => panic!("Specified nvic of '{}' does not exist", index)
+            _ => panic!("Specified nvic of '{}' does not exist", index),
         }
     }
 }
@@ -55,7 +55,7 @@ impl IndexMut<usize> for Nvic {
             5 => &mut self.ipr5,
             6 => &mut self.ipr6,
             7 => &mut self.ipr7,
-            _ => panic!("Specified nvic of '{}' does not exist", index)
+            _ => panic!("Specified nvic of '{}' does not exist", index),
         }
     }
 }

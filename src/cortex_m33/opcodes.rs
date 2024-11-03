@@ -4,7 +4,6 @@ pub struct Registers {
     pub register_numbers: Vec<u8>,
 }
 
-
 /// Accepts any struct that implements the &dyn Register trait. Calls .number() on that struct, and adds it to an array of those numbers
 #[macro_export]
 macro_rules! registers {
@@ -14,7 +13,7 @@ macro_rules! registers {
             $(
                 array.push($x.number() as u8);
             )*
-            
+
             Registers {
                 register_numbers: array
             }
@@ -81,11 +80,7 @@ impl AddsT2 {
 
 pub struct AddsRegisterT1;
 impl AddsRegisterT1 {
-    pub fn opcode(
-        rd: &dyn Register,
-        rn: &dyn Register,
-        rm: &dyn Register,
-    ) -> u16 {
+    pub fn opcode(rd: &dyn Register, rn: &dyn Register, rm: &dyn Register) -> u16 {
         return (0b0001100 << 9)
             | ((rm.number() & 0x7) << 6)
             | ((rn.number() & 7) << 3)

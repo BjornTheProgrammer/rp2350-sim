@@ -1,5 +1,8 @@
-use std::{collections::HashMap, ops::{Index, IndexMut}};
 use crate::cortex_m33::operation::get_bits;
+use std::{
+    collections::HashMap,
+    ops::{Index, IndexMut},
+};
 
 use super::CortexM33;
 
@@ -7,7 +10,7 @@ use super::CortexM33;
 pub enum InterruptException {
     PendSV,
     SysTick,
-    ExternalInterrupt(u8)
+    ExternalInterrupt(u8),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -16,7 +19,7 @@ pub enum Exception {
     NMI,
     HardFault,
     SVCall,
-    Interrupt(InterruptException)
+    Interrupt(InterruptException),
 }
 
 impl Exception {
@@ -36,13 +39,13 @@ impl Exception {
 }
 
 pub struct Exceptions {
-    pub active: HashMap<u8, Exception>
+    pub active: HashMap<u8, Exception>,
 }
 
 impl Exceptions {
     pub fn new() -> Self {
         Self {
-            active: HashMap::new()
+            active: HashMap::new(),
         }
     }
 

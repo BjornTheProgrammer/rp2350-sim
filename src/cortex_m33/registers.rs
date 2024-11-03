@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 pub trait Register {
     fn get(&self) -> u32;
     fn set(&mut self, value: u32);
@@ -134,7 +132,7 @@ pub struct CortexM33Registers {
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum SpMode {
     Main,
-    Process
+    Process,
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
@@ -149,7 +147,7 @@ impl Sp {
         Self {
             msp,
             psp,
-            mode: SpMode::Main
+            mode: SpMode::Main,
         }
     }
 
@@ -197,70 +195,3 @@ impl CortexM33Registers {
         }
     }
 }
-
-// #[derive(Debug, PartialEq, Copy, Clone)]
-// pub enum Register {
-//     // First value is the register number.
-//     GeneralRegister(u16, u32),
-//     LrRegister(u16, u32),
-//     PcRegister(u16, u32),
-//     SPRegister(u16, Sp),
-// }
-
-// impl Register {
-//     pub fn get(&self) -> u32 {
-//         match self {
-//             Register::GeneralRegister(_, val) => *val,
-//             Register::LrRegister(_, val) => *val,
-//             Register::PcRegister(_, val) => *val,
-//             Register::SPRegister(_, val) => val.get(),
-//         }
-//     }
-
-//     pub fn set(&mut self, value: u32) {
-//         match self {
-//             Register::GeneralRegister(_, val) => *val = value,
-//             Register::LrRegister(_, val) => *val = value,
-//             Register::PcRegister(_, val) => *val = value,
-//             Register::SPRegister(_, val) => val.set(value),
-//         };
-//     }
-
-//     pub fn number(&self) -> u16 {
-//         match self {
-//             Register::GeneralRegister(val, _) => *val,
-//             Register::LrRegister(val, _) => *val,
-//             Register::PcRegister(val, _) => *val,
-//             Register::SPRegister(val, _) => *val,
-//         }
-//     }
-
-//     pub fn is_lr(&self) -> bool {
-//         match self {
-//             Register::LrRegister(_, _) => true,
-//             _ => false,
-//         }
-//     }
-
-//     pub fn is_pc(&self) -> bool {
-//         match self {
-//             Register::PcRegister(_, _) => true,
-//             _ => false,
-//         }
-//     }
-
-//     pub fn is_sp(&self) -> bool {
-//         match self {
-//             Register::SPRegister(_, _) => true,
-//             _ => false,
-//         }
-//     }
-
-//     pub fn is_general_register(&self) -> bool {
-//         match self {
-//             Register::GeneralRegister(_, _) => true,
-//             _ => false,
-//         }
-//     }
-// }
-

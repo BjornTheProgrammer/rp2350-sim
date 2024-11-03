@@ -1,13 +1,13 @@
 mod apsr;
+pub mod exception;
 mod instructions;
+pub mod nvic;
 pub mod opcodes;
 mod operation;
 pub mod registers;
-pub mod exception;
-pub mod nvic;
 
-use crate::cortex_m33::nvic::Nvic;
 use crate::cortex_m33::apsr::Apsr;
+use crate::cortex_m33::nvic::Nvic;
 use crate::cortex_m33::registers::{CortexM33Registers, Register};
 pub use instructions::OpCode;
 
@@ -17,7 +17,7 @@ use self::operation::get_bits;
 #[derive(Debug, PartialEq)]
 pub enum Mode {
     Thread,
-    Handler
+    Handler,
 }
 
 pub struct Shpr {
@@ -27,10 +27,7 @@ pub struct Shpr {
 
 impl Shpr {
     pub fn new() -> Self {
-        Self {
-            shpr2: 0,
-            shpr3: 0
-        }
+        Self { shpr2: 0, shpr3: 0 }
     }
 
     pub fn pri_11(&self) -> u8 {
@@ -53,13 +50,11 @@ pub struct CortexM33 {
     pub ipsr: u8,
     pub exceptions: Exceptions,
     pub shpr: Shpr,
-    pub nvic: Nvic
+    pub nvic: Nvic,
 }
 
 impl CortexM33 {
-    pub fn deafult_exceptions() {
-
-    }
+    pub fn deafult_exceptions() {}
 
     pub fn new() -> Self {
         Self {
@@ -69,7 +64,7 @@ impl CortexM33 {
             ipsr: 0,
             exceptions: Exceptions::new(),
             shpr: Shpr::new(),
-            nvic: Nvic::new()
+            nvic: Nvic::new(),
         }
     }
 

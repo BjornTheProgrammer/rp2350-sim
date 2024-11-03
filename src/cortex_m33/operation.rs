@@ -3,7 +3,10 @@ use core::ops::Range;
 use std::ops::{Bound, RangeBounds};
 
 use super::{
-    apsr::Apsr, exception::Exceptions, registers::{self, PcRegister, Register}, CortexM33, Mode
+    apsr::Apsr,
+    exception::Exceptions,
+    registers::{self, PcRegister, Register},
+    CortexM33, Mode,
 };
 
 pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
@@ -18,7 +21,10 @@ pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
     (unsigned_sum.0, carry_out, overflow)
 }
 
-pub fn unwind_bounds<V: num_traits::PrimInt, R: RangeBounds<usize>>(value: V, range: R) -> (usize, usize) {
+pub fn unwind_bounds<V: num_traits::PrimInt, R: RangeBounds<usize>>(
+    value: V,
+    range: R,
+) -> (usize, usize) {
     let start: Bound<&usize> = range.start_bound();
     let start = match start {
         Bound::Included(&start) => start,
@@ -213,13 +219,15 @@ pub fn last_in_it_block() -> bool {
     false
 }
 
-pub fn is_ones<N: num_traits::PrimInt,  R: RangeBounds<usize>>(value: N, range: R) -> bool {
+pub fn is_ones<N: num_traits::PrimInt, R: RangeBounds<usize>>(value: N, range: R) -> bool {
     let (start, end) = unwind_bounds(value, range);
 
     for i in start..end {
-        if get_bit(value, i) == false { return false }
+        if get_bit(value, i) == false {
+            return false;
+        }
     }
-    
+
     true
 }
 
@@ -229,12 +237,18 @@ pub fn exception_active_bit_count(exceptions: &Exceptions) -> usize {
 
 pub fn exception_return(cortex: &CortexM33, ipsr: u8, current_mode: Mode, exc_return: u32) {
     assert_eq!(current_mode, Mode::Handler);
-    if !is_ones(get_bits(exc_return, 4..=27), 0..23) { unpredictable!(); }
+    if !is_ones(get_bits(exc_return, 4..=27), 0..23) {
+        unpredictable!();
+    }
 
     let returning_exception_number = get_bits(ipsr, 0..=5);
     let nested_activation = exception_active_bit_count(&cortex.exceptions);
 
-    if cortex.exceptions.active.contains_key(&returning_exception_number) {
+    if cortex
+        .exceptions
+        .active
+        .contains_key(&returning_exception_number)
+    {
         unpredictable!();
     }
     match get_bits(exc_return, 0..=3) {
@@ -246,7 +260,7 @@ pub fn exception_return(cortex: &CortexM33, ipsr: u8, current_mode: Mode, exc_re
                 // CurrentMode = Mode_Handler;
                 // CONTROL.SPSEL = ‘0’;
             }
-        },
+        }
         _ => unpredictable!(),
     }
 }
@@ -255,7 +269,6 @@ pub fn bx_write_pc(pc: &mut PcRegister, current_mode: Mode, address: u32) {
     if current_mode == Mode::Handler && get_bits(address, 28..=31) == 0b1111 {
         // exception_return()
     }
-
 }
 
 #[derive(Debug)]
