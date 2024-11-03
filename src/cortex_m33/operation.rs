@@ -3,8 +3,7 @@ use core::ops::Range;
 use std::ops::{Bound, RangeBounds};
 
 use super::{
-    apsr::Apsr,
-    registers::{self, Register}, Mode,
+    apsr::Apsr, exception::Exceptions, registers::{self, Register}, CortexM33, Mode
 };
 
 pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
@@ -112,9 +111,11 @@ pub fn lsr_c(value: u32, amount: usize) -> (u32, bool) {
 #[macro_export]
 macro_rules! unpredictable {
 	() => {
-		println!("Unpredictable behavior occured!");
-		println!("What does this mean? It means according to the documentation...");
-		println!("Means the behavior cannot be relied on. UNPREDICTABLE behavior must not represent a security hole. UNPREDICTABLE behavior must not hang the processor, or any parts of the system. UNPREDICTABLE behavior must not be documented or promoted as having a defined effect.");
+        {
+    		println!("Unpredictable behavior occured!");
+    		println!("What does this mean? It means according to the documentation...");
+    		println!("Means the behavior cannot be relied on. UNPREDICTABLE behavior must not represent a security hole. UNPREDICTABLE behavior must not hang the processor, or any parts of the system. UNPREDICTABLE behavior must not be documented or promoted as having a defined effect.");
+        }
 	};
 }
 
@@ -222,15 +223,35 @@ pub fn is_ones<N: num_traits::PrimInt,  R: RangeBounds<usize>>(value: N, range: 
     true
 }
 
-pub fn exception_return(ipsr: u8, current_mode: Mode, exc_return: u32) {
-    assert_eq!(current_mode, Mode::Handler);
-    if !is_ones(get_bits(exc_return, 4..27), 0..23) { unpredictable!(); }
-
-    let returning_exception_number = get_bits(ipsr, 0..5);
-    let nested_activation;
+pub fn exception_active_bit_count(exceptions: &Exceptions) -> usize {
+    exceptions.active.len()
 }
 
-pub fn bx_write_pc<T: registers::SpControl>(pc: &mut Register<T>, current_mode: Mode, address: u32) {
+pub fn exception_return(cortex: &CortexM33, ipsr: u8, current_mode: Mode, exc_return: u32) {
+    assert_eq!(current_mode, Mode::Handler);
+    if !is_ones(get_bits(exc_return, 4..=27), 0..23) { unpredictable!(); }
+
+    let returning_exception_number = get_bits(ipsr, 0..=5);
+    let nested_activation = exception_active_bit_count(&cortex.exceptions);
+
+    if cortex.exceptions.active.contains_key(&returning_exception_number) {
+        unpredictable!();
+    }
+    match get_bits(exc_return, 0..=3) {
+        0b0000 => {
+            if nested_activation == 1 {
+                unpredictable!();
+            } else {
+                // let frameptr = cortex.registers.sp;
+                // CurrentMode = Mode_Handler;
+                // CONTROL.SPSEL = ‘0’;
+            }
+        },
+        _ => unpredictable!(),
+    }
+}
+
+pub fn bx_write_pc(pc: &mut Register, current_mode: Mode, address: u32) {
     if current_mode == Mode::Handler && get_bits(address, 28..=31) == 0b1111 {
         exception_return()
     }
@@ -246,7 +267,7 @@ pub enum SignExtended {
     U128(u128),
 }
 
-pub fn branch_write_pc<T: registers::SpControl>(pc: &mut Register<T>, address: u32) {
+pub fn branch_write_pc(pc: &mut Register, address: u32) {
     pc.set(address & 0xFFFFFFFE);
 }
 

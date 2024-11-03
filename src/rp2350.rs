@@ -25,17 +25,17 @@ AHB Peripherals 				0x50000000
 Core-local Peripherals (SIO) 	0xd0000000
 Cortex-M33 private registers 	0xe0000000
 */
-pub struct RP2350<S: SpControl = SpControlOn> {
+pub struct RP2350 {
     // SRAM is partitioned into 10 banks that act like one
     pub sram: [u8; KB_OF_RAM * KB],
 
     // Has to be on the heap, absolutely blows up the stack
     pub flash: Box<[u8; MB_OF_FLASH * MB]>,
 
-    pub cortex_m33: CortexM33<S>,
+    pub cortex_m33: CortexM33,
 }
 
-impl<S: SpControl> RP2350<S> {
+impl RP2350 {
     pub fn new() -> Self {
         RP2350 {
             sram: [0; KB_OF_RAM * 1024],

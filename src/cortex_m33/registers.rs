@@ -1,29 +1,75 @@
 use std::marker::PhantomData;
 
-#[derive(PartialEq, Copy, Clone)]
-pub struct CortexM33Registers<S: SpControl> {
-    pub r0: Register<S>,
-    pub r1: Register<S>,
-    pub r2: Register<S>,
-    pub r3: Register<S>,
-    pub r4: Register<S>,
-    pub r5: Register<S>,
-    pub r6: Register<S>,
-    pub r7: Register<S>,
-    pub r8: Register<S>,
-    pub r9: Register<S>,
-    pub r10: Register<S>,
-    pub r11: Register<S>,
-    pub r12: Register<S>,
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct CortexM33Registers {
+    pub r0: Register,
+    pub r1: Register,
+    pub r2: Register,
+    pub r3: Register,
+    pub r4: Register,
+    pub r5: Register,
+    pub r6: Register,
+    pub r7: Register,
+    pub r8: Register,
+    pub r9: Register,
+    pub r10: Register,
+    pub r11: Register,
+    pub r12: Register,
 
-    pub sp: Register<S>,
+    pub sp: Register,
 
-    pub lr: Register<S>,
+    pub lr: Register,
 
-    pub pc: Register<S>,
+    pub pc: Register,
+
+    pub mode: SpMode,
 }
 
-impl<S: SpControl> CortexM33Registers<S> {
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum SpMode {
+    Main,
+    Process
+}
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct Sp {
+    pub msp: u32,
+    pub psp: u32,
+    pub mode: SpMode,
+}
+
+impl Sp {
+    pub fn new(msp: u32, psp: u32) -> Self {
+        Self {
+            msp,
+            psp,
+            mode: SpMode::Main
+        }
+    }
+
+    pub fn change_mode(&mut self) {
+        match self.mode {
+            SpMode::Main => self.mode = SpMode::Process,
+            SpMode::Process => self.mode = SpMode::Main,
+        }
+    }
+
+    pub fn get(&self) -> u32 {
+        match self.mode {
+            SpMode::Main => self.msp,
+            SpMode::Process => self.psp,
+        }
+    }
+
+    pub fn set(&mut self, value: u32) {
+        match self.mode {
+            SpMode::Main => self.msp = value,
+            SpMode::Process => self.psp = value,
+        }
+    }
+}
+
+impl CortexM33Registers {
     pub fn new() -> Self {
         Self {
             r0: Register::GeneralRegister(0, 0),
@@ -39,23 +85,24 @@ impl<S: SpControl> CortexM33Registers<S> {
             r10: Register::GeneralRegister(10, 0),
             r11: Register::GeneralRegister(11, 0),
             r12: Register::GeneralRegister(12, 0),
-            sp: Register::SPRegister(13, SP::new(MSP(0), PSP(0))),
+            sp: Register::SPRegister(13, Sp::new(0, 0)),
             lr: Register::LrRegister(14, 0),
             pc: Register::PcRegister(15, 0),
+            mode: SpMode::Main
         }
     }
 }
 
-#[derive(PartialEq, Copy, Clone)]
-pub enum Register<S: SpControl> {
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Register {
     // First value is the register number.
     GeneralRegister(u16, u32),
     LrRegister(u16, u32),
     PcRegister(u16, u32),
-    SPRegister(u16, SP<S>),
+    SPRegister(u16, Sp),
 }
 
-impl<S: SpControl> Register<S> {
+impl Register {
     pub fn get(&self) -> u32 {
         match self {
             Register::GeneralRegister(_, val) => *val,
@@ -112,72 +159,3 @@ impl<S: SpControl> Register<S> {
     }
 }
 
-#[derive(PartialEq, Copy, Clone)]
-pub struct MSP(pub u32);
-#[derive(PartialEq, Copy, Clone)]
-pub struct PSP(pub u32);
-
-// Define the SpControl trait with associated methods for get and set
-pub trait SpControl {
-    fn get(sp: &SP<Self>) -> u32
-    where
-        Self: Sized;
-    fn set(sp: &mut SP<Self>, value: u32)
-    where
-        Self: Sized;
-}
-
-#[derive(PartialEq, Copy, Clone)]
-// Define the struct for the Stack Pointer Control
-pub struct SP<S: SpControl> {
-    msp: MSP,
-    psp: PSP,
-    _state: PhantomData<S>,
-}
-
-impl<S: SpControl> SP<S> {
-    pub fn new(msp: MSP, psp: PSP) -> Self {
-        Self {
-            msp,
-            psp,
-            _state: PhantomData,
-        }
-    }
-
-    // Generic method for get
-    pub fn get(&self) -> u32 {
-        S::get(self)
-    }
-
-    // Generic method for set
-    pub fn set(&mut self, value: u32) {
-        S::set(self, value)
-    }
-}
-
-#[derive(PartialEq, Copy, Clone)]
-pub struct SpControlOn;
-#[derive(PartialEq, Copy, Clone)]
-pub struct SpControlOff;
-
-// Implement the SpControl trait for SpControlOn
-impl SpControl for SpControlOn {
-    fn get(sp: &SP<Self>) -> u32 {
-        sp.msp.0
-    }
-
-    fn set(sp: &mut SP<Self>, value: u32) {
-        sp.msp.0 = value;
-    }
-}
-
-// Implement the SpControl trait for SpControlOff
-impl SpControl for SpControlOff {
-    fn get(sp: &SP<Self>) -> u32 {
-        sp.psp.0
-    }
-
-    fn set(sp: &mut SP<Self>, value: u32) {
-        sp.psp.0 = value;
-    }
-}

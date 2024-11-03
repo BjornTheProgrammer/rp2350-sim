@@ -14,7 +14,7 @@ pub struct OpCode {
 }
 
 impl OpCode {
-    pub fn execute<S: registers::SpControl>(&self, rp2350: &mut RP2350<S>) {
+    pub fn execute(&self, rp2350: &mut RP2350) {
         let op_code_2 = rp2350.read_from_address(self.address + 2);
         Instruction::new(self, &op_code_2).execute(rp2350);
     }
@@ -297,7 +297,7 @@ impl Instruction {
         }
     }
 
-    pub fn execute<S: registers::SpControl>(&self, rp2350: &mut RP2350<S>) {
+    pub fn execute(&self, rp2350: &mut RP2350) {
         println!("Instruction: {:?}", self.instruction);
         let opcode_pc = rp2350.cortex_m33.registers.pc.get() & !1;
         let opcode = self.opcode.code;
