@@ -1,33 +1,35 @@
 use crate::cortex_m33::Register;
 
-pub struct Registers<'a> {
-    register_numbers: &'a [Register],
+pub struct Registers {
+    pub register_numbers: Vec<u8>,
 }
 
-impl Registers<'_> {
+
+/// Accepts any struct that implements the &dyn Register trait. Calls .number() on that struct, and adds it to an array of those numbers
+#[macro_export]
+macro_rules! registers {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut array = Vec::new();
+            $(
+                array.push($x.number() as u8);
+            )*
+            
+            Registers {
+                register_numbers: array
+            }
+        }
+    };
+}
+
+impl Registers {
     pub fn binary(&self) -> u16 {
         let mut binary = 0;
         for number in self.register_numbers.iter() {
-            binary = binary | (1 << number.number());
+            binary = binary | (1 << number);
         }
 
         return binary;
-    }
-}
-
-// Implementing `From<&'a [u8]>` for `Registers<'a>`
-impl<'a> From<&'a [Register]> for Registers<'a> {
-    fn from(array: &'a [Register]) -> Self {
-        Registers {
-            register_numbers: array,
-        }
-    }
-}
-
-// Implementing `Into<&'a [u8]>` for `Registers<'a>`
-impl<'a> Into<&'a [Register]> for Registers<'a> {
-    fn into(self) -> &'a [Register] {
-        self.register_numbers
     }
 }
 
@@ -40,7 +42,7 @@ impl PushT1 {
 
 pub struct AdcT1;
 impl AdcT1 {
-    pub fn opcode(rdn: Register, rm: Register) -> u16 {
+    pub fn opcode(rdn: &dyn Register, rm: &dyn Register) -> u16 {
         return (0b0100000101 << 6) | ((rm.number() & 7) << 3) | (rdn.number() & 7);
     }
 }
@@ -55,14 +57,14 @@ impl AddSpPlusImmediateT2 {
 pub struct AddSpPlusImmediateT1;
 impl AddSpPlusImmediateT1 {
     // rd is the register number
-    pub fn opcode(rd: Register, imm8: u16) -> u16 {
+    pub fn opcode(rd: &dyn Register, imm8: u16) -> u16 {
         return (0b10101 << 11) | ((rd.number() & 7) << 8) | ((imm8 >> 2) & 0xff);
     }
 }
 
 pub struct AddsT1;
 impl AddsT1 {
-    pub fn opcode(rd: Register, rn: Register, imm3: u16) -> u16 {
+    pub fn opcode(rd: &dyn Register, rn: &dyn Register, imm3: u16) -> u16 {
         return (0b0001110 << 9)
             | ((imm3 & 0x7) << 6)
             | ((rn.number() & 7) << 3)
@@ -72,7 +74,7 @@ impl AddsT1 {
 
 pub struct AddsT2;
 impl AddsT2 {
-    pub fn opcode(rdn: Register, imm8: u16) -> u16 {
+    pub fn opcode(rdn: &dyn Register, imm8: u16) -> u16 {
         return (0b00110 << 11) | ((rdn.number() & 7) << 8) | (imm8 & 0xff);
     }
 }
@@ -80,9 +82,9 @@ impl AddsT2 {
 pub struct AddsRegisterT1;
 impl AddsRegisterT1 {
     pub fn opcode(
-        rd: Register,
-        rn: Register,
-        rm: Register,
+        rd: &dyn Register,
+        rn: &dyn Register,
+        rm: &dyn Register,
     ) -> u16 {
         return (0b0001100 << 9)
             | ((rm.number() & 0x7) << 6)
@@ -93,7 +95,7 @@ impl AddsRegisterT1 {
 
 pub struct AddRegisterT2;
 impl AddRegisterT2 {
-    pub fn opcode(rdn: Register, rm: Register) -> u16 {
+    pub fn opcode(rdn: &dyn Register, rm: &dyn Register) -> u16 {
         return (0b01000100 << 8)
             | ((rdn.number() & 0x8) << 4)
             | ((rm.number() & 0xf) << 3)
@@ -103,14 +105,14 @@ impl AddRegisterT2 {
 
 pub struct AdrT1;
 impl AdrT1 {
-    pub fn opcode(rd: Register, imm8: u16) -> u16 {
+    pub fn opcode(rd: &dyn Register, imm8: u16) -> u16 {
         return (0b10100 << 11) | ((rd.number() & 7) << 8) | ((imm8 >> 2) & 0xff);
     }
 }
 
 pub struct AndRegisterT1;
 impl AndRegisterT1 {
-    pub fn opcode(rn: Register, rm: Register) -> u16 {
+    pub fn opcode(rn: &dyn Register, rm: &dyn Register) -> u16 {
         return (0b0100000000 << 6) | ((rm.number() & 7) << 3) | (rn.number() & 0x7);
     }
 }
@@ -152,7 +154,7 @@ impl IsbT1Sy {
 
 pub struct MovRegisterT1;
 impl MovRegisterT1 {
-    pub fn opcode(rd: Register, rm: Register) -> u16 {
+    pub fn opcode(rd: &dyn Register, rm: &dyn Register) -> u16 {
         let bit = if rd.number() & 0x8 > 0 { 1 } else { 0 };
 
         return (0b01000110 << 8) | (bit << 7) | (rm.number() << 3) | (rd.number() & 0x7);
@@ -161,28 +163,28 @@ impl MovRegisterT1 {
 
 pub struct LdmiaT1;
 impl LdmiaT1 {
-    pub fn opcode(rn: Register, registers: Registers) -> u16 {
+    pub fn opcode(rn: &dyn Register, registers: Registers) -> u16 {
         return (0b11001 << 11) | ((rn.number() & 0x7) << 8) | (registers.binary() & 0xff);
     }
 }
 
 pub struct RevT1;
 impl RevT1 {
-    pub fn opcode(rd: Register, rn: Register) -> u16 {
+    pub fn opcode(rd: &dyn Register, rn: &dyn Register) -> u16 {
         return (0b1011101000 << 6) | ((rn.number() & 0x7) << 3) | (rd.number() & 0x7);
     }
 }
 
 pub struct Rev16T1;
 impl Rev16T1 {
-    pub fn opcode(rd: Register, rn: Register) -> u16 {
+    pub fn opcode(rd: &dyn Register, rn: &dyn Register) -> u16 {
         return (0b1011101001 << 6) | ((rn.number() & 0x7) << 3) | (rd.number() & 0x7);
     }
 }
 
 pub struct StmiaT1;
 impl StmiaT1 {
-    pub fn opcode(rn: Register, registers: Registers) -> u16 {
+    pub fn opcode(rn: &dyn Register, registers: Registers) -> u16 {
         return (0b11000 << 11) | ((rn.number() & 0x7) << 8) | (registers.binary() & 0xff);
     }
 }
@@ -196,14 +198,14 @@ impl SubSpMinusImmediateT1 {
 
 pub struct UxtbT1;
 impl UxtbT1 {
-    pub fn opcode(rd: Register, rm: Register) -> u16 {
+    pub fn opcode(rd: &dyn Register, rm: &dyn Register) -> u16 {
         return (0b1011001011 << 6) | ((rm.number() & 7) << 3) | (rd.number() & 7);
     }
 }
 
 pub struct UxthT1;
 impl UxthT1 {
-    pub fn opcode(rd: Register, rm: Register) -> u16 {
+    pub fn opcode(rd: &dyn Register, rm: &dyn Register) -> u16 {
         return (0b1011001010 << 6) | ((rm.number() & 7) << 3) | (rd.number() & 7);
     }
 }
@@ -236,14 +238,14 @@ impl BlT1 {
 
 pub struct BlxT1;
 impl BlxT1 {
-    pub fn opcode(rm: Register) -> u16 {
+    pub fn opcode(rm: &dyn Register) -> u16 {
         return (0b010001111 << 7) | (rm.number() << 3);
     }
 }
 
 pub struct AsrImmediateT1;
 impl AsrImmediateT1 {
-    pub fn opcode(rd: Register, rm: Register, imm5: u16) -> u16 {
+    pub fn opcode(rd: &dyn Register, rm: &dyn Register, imm5: u16) -> u16 {
         return (0b00010 << 11)
             | ((imm5 & 0x1f) << 6)
             | ((rm.number() & 0x7) << 3)
@@ -253,7 +255,7 @@ impl AsrImmediateT1 {
 
 pub struct AsrRegisterT1;
 impl AsrRegisterT1 {
-    pub fn opcode(rdn: Register, rm: Register) -> u16 {
+    pub fn opcode(rdn: &dyn Register, rm: &dyn Register) -> u16 {
         return (0b0100000100 << 6)
             | ((rm.number() & 0x7) << 3)
             | ((rm.number() & 0x7) << 3)

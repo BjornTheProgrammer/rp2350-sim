@@ -73,7 +73,7 @@ impl CortexM33 {
         }
     }
 
-    pub fn get_register_from_number(&mut self, i: u16) -> &mut Register {
+    pub fn get_register_from_number(&mut self, i: u16) -> &mut dyn Register {
         match i {
             0 => &mut self.registers.r0,
             1 => &mut self.registers.r1,

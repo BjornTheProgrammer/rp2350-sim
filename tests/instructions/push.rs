@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use rp2350_sim::cortex_m33::opcodes::*;
     use rp2350_sim::cortex_m33::registers::Register;
-    use rp2350_sim::{RAM_START_ADDRESS, RP2350};
+    use rp2350_sim::cortex_m33::opcodes::*;
+    
+    use rp2350_sim::{registers, RAM_START_ADDRESS, RP2350};
 
     #[test]
     fn push() {
@@ -15,10 +16,10 @@ mod tests {
             .sp
             .set(RAM_START_ADDRESS + 0x100);
 
-        let registers: &[Register<_>] = &[
+        let registers = registers![
             rp2350.cortex_m33.registers.r4,
             rp2350.cortex_m33.registers.r5,
-            rp2350.cortex_m33.registers.r6,
+            rp2350.cortex_m33.registers.r6
         ];
         let binary = PushT1::opcode(true, registers.into());
 

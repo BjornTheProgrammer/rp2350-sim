@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use rp2350_sim::cortex_m33::registers::Register;
     use rp2350_sim::cortex_m33::opcodes::*;
     use rp2350_sim::{RAM_START_ADDRESS, RP2350};
 
@@ -12,8 +13,8 @@ mod tests {
         rp2350.write_to_address(
             RAM_START_ADDRESS,
             Rev16T1::opcode(
-                rp2350.cortex_m33.registers.r0,
-                rp2350.cortex_m33.registers.r5,
+                &rp2350.cortex_m33.registers.r0,
+                &rp2350.cortex_m33.registers.r5,
             ),
         );
 

@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use rp2350_sim::cortex_m33::registers::Register;
     use rp2350_sim::cortex_m33::opcodes::*;
     use rp2350_sim::{RAM_START_ADDRESS, RP2350};
 

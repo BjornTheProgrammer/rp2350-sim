@@ -2,7 +2,7 @@ use crate::cortex_m33::operation::{
     add_with_carry, branch_write_pc, condition_passed, decode_imm_shift, in_it_block, last_in_it_block, sign_extend, SignExtended
 };
 use crate::cortex_m33::operation::{get_bit, get_bits, is_zero_bit, shift_c, SRType};
-use crate::cortex_m33::registers;
+use crate::cortex_m33::registers::Register;
 use crate::rp2350::RP2350;
 use crate::unpredictable;
 use bilge::prelude::*;

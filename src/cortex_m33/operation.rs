@@ -3,7 +3,7 @@ use core::ops::Range;
 use std::ops::{Bound, RangeBounds};
 
 use super::{
-    apsr::Apsr, exception::Exceptions, registers::{self, Register}, CortexM33, Mode
+    apsr::Apsr, exception::Exceptions, registers::{self, PcRegister, Register}, CortexM33, Mode
 };
 
 pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
@@ -251,9 +251,9 @@ pub fn exception_return(cortex: &CortexM33, ipsr: u8, current_mode: Mode, exc_re
     }
 }
 
-pub fn bx_write_pc(pc: &mut Register, current_mode: Mode, address: u32) {
+pub fn bx_write_pc(pc: &mut PcRegister, current_mode: Mode, address: u32) {
     if current_mode == Mode::Handler && get_bits(address, 28..=31) == 0b1111 {
-        exception_return()
+        // exception_return()
     }
 
 }
@@ -267,7 +267,7 @@ pub enum SignExtended {
     U128(u128),
 }
 
-pub fn branch_write_pc(pc: &mut Register, address: u32) {
+pub fn branch_write_pc(pc: &mut PcRegister, address: u32) {
     pc.set(address & 0xFFFFFFFE);
 }
 

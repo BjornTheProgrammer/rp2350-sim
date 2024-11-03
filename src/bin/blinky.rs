@@ -1,4 +1,4 @@
-use rp2350_sim::RP2350;
+use rp2350_sim::{cortex_m33::registers::Register, RP2350};
 
 fn main() {
     let hex = include_str!("../../programs/blinky.hex");

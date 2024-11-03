@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use rp2350_sim::cortex_m33::registers::Register;
     use rp2350_sim::cortex_m33::opcodes::*;
     use rp2350_sim::{RAM_START_ADDRESS, RP2350};
 
@@ -25,7 +26,7 @@ mod tests {
 
         rp2350.write_to_address(
             RAM_START_ADDRESS,
-            AddSpPlusImmediateT1::opcode(rp2350.cortex_m33.registers.r1, 0x10),
+            AddSpPlusImmediateT1::opcode(&rp2350.cortex_m33.registers.r1, 0x10),
         );
         rp2350.cortex_m33.registers.r1.set(0);
         rp2350.execute_instruction();
@@ -43,8 +44,8 @@ mod tests {
         rp2350.write_to_address(
             RAM_START_ADDRESS,
             AddsT1::opcode(
-                rp2350.cortex_m33.registers.r1,
-                rp2350.cortex_m33.registers.r2,
+                &rp2350.cortex_m33.registers.r1,
+                &rp2350.cortex_m33.registers.r2,
                 3,
             ),
         );
@@ -66,14 +67,14 @@ mod tests {
 
         rp2350.write_to_address(
             RAM_START_ADDRESS,
-            AddsT2::opcode(rp2350.cortex_m33.registers.r1, 1),
+            AddsT2::opcode(&rp2350.cortex_m33.registers.r1, 1),
         );
         rp2350.cortex_m33.registers.r1.set(0xffffffff);
         rp2350.execute_instruction();
 
         println!(
             "opcode: {:#x}",
-            AddsT2::opcode(rp2350.cortex_m33.registers.r1, 1)
+            AddsT2::opcode(&rp2350.cortex_m33.registers.r1, 1)
         );
         println!("apsr: {:?}", rp2350.cortex_m33.apsr);
 
@@ -93,9 +94,9 @@ mod tests {
         rp2350.write_to_address(
             RAM_START_ADDRESS,
             AddsRegisterT1::opcode(
-                rp2350.cortex_m33.registers.r1,
-                rp2350.cortex_m33.registers.r2,
-                rp2350.cortex_m33.registers.r7,
+                &rp2350.cortex_m33.registers.r1,
+                &rp2350.cortex_m33.registers.r2,
+                &rp2350.cortex_m33.registers.r7,
             ),
         );
         rp2350.cortex_m33.registers.r2.set(2);
@@ -119,9 +120,9 @@ mod tests {
         rp2350.write_to_address(
             RAM_START_ADDRESS,
             AddsRegisterT1::opcode(
-                rp2350.cortex_m33.registers.r4,
-                rp2350.cortex_m33.registers.r4,
-                rp2350.cortex_m33.registers.r2,
+                &rp2350.cortex_m33.registers.r4,
+                &rp2350.cortex_m33.registers.r4,
+                &rp2350.cortex_m33.registers.r2,
             ),
         );
         rp2350.cortex_m33.registers.r2.set(0x74bc8000);
@@ -145,9 +146,9 @@ mod tests {
         rp2350.write_to_address(
             RAM_START_ADDRESS,
             AddsRegisterT1::opcode(
-                rp2350.cortex_m33.registers.r1,
-                rp2350.cortex_m33.registers.r1,
-                rp2350.cortex_m33.registers.r1,
+                &rp2350.cortex_m33.registers.r1,
+                &rp2350.cortex_m33.registers.r1,
+                &rp2350.cortex_m33.registers.r1,
             ),
         );
         rp2350.cortex_m33.registers.r1.set(0xbf8d1424);
@@ -171,8 +172,8 @@ mod tests {
         rp2350.write_to_address(
             RAM_START_ADDRESS,
             AddRegisterT2::opcode(
-                rp2350.cortex_m33.registers.r1,
-                rp2350.cortex_m33.registers.r12,
+                &rp2350.cortex_m33.registers.r1,
+                &rp2350.cortex_m33.registers.r12,
             ),
         );
         rp2350.cortex_m33.registers.r1.set(66);

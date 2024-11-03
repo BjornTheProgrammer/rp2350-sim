@@ -1,4 +1,4 @@
-use crate::cortex_m33::registers::{SpControl, SpControlOn};
+use crate::cortex_m33::registers::Register;
 use crate::cortex_m33::{CortexM33, OpCode};
 use anyhow::{Context, Result};
 
