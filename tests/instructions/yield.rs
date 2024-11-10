@@ -9,7 +9,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, YieldT1::opcode());
+        rp2350.cortex_m33.memory.write_u16(RAM_START_ADDRESS, YieldT1::opcode());
 
         rp2350.execute_instruction();
 

@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 pub trait Register {
     fn get(&self) -> u32;
     fn set(&mut self, value: u32);
@@ -42,6 +44,24 @@ impl Register for GeneralRegister {
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub struct SPRegister(u16, Sp);
+impl SPRegister {
+    pub fn get_msp(&self) -> u32 {
+        self.1.msp
+    }
+
+    pub fn get_psp(&self) -> u32 {
+        self.1.psp
+    }
+
+    pub fn set_mode(&mut self, mode: SpMode) {
+        self.1.mode = mode;
+    }
+
+    pub fn get_mode(&mut self) -> SpMode {
+        self.1.mode
+    }
+}
+
 impl Register for SPRegister {
     fn get(&self) -> u32 {
         match self.1.mode {
@@ -192,6 +212,50 @@ impl CortexM33Registers {
             sp: SPRegister(13, Sp::new(0, 0)),
             lr: LrRegister(14, 0),
             pc: PcRegister(15, 0),
+        }
+    }
+}
+
+impl Index<usize> for CortexM33Registers {
+    type Output = u32;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        match index {
+            0 => &self.r0.1,
+            1 => &self.r1.1,
+            2 => &self.r2.1,
+            3 => &self.r3.1,
+            4 => &self.r4.1,
+            5 => &self.r5.1,
+            6 => &self.r6.1,
+            7 => &self.r7.1,
+            8 => &self.r8.1,
+            9 => &self.r9.1,
+            10 => &self.r10.1,
+            11 => &self.r11.1,
+            12 => &self.r12.1,
+            _ => panic!("Specified register of '{}' does not exist", index),
+        }
+    }
+}
+
+impl IndexMut<usize> for CortexM33Registers {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        match index {
+            0 => &mut self.r0.1,
+            1 => &mut self.r1.1,
+            2 => &mut self.r2.1,
+            3 => &mut self.r3.1,
+            4 => &mut self.r4.1,
+            5 => &mut self.r5.1,
+            6 => &mut self.r6.1,
+            7 => &mut self.r7.1,
+            8 => &mut self.r8.1,
+            9 => &mut self.r9.1,
+            10 => &mut self.r10.1,
+            11 => &mut self.r11.1,
+            12 => &mut self.r12.1,
+            _ => panic!("Specified register of '{}' does not exist", index),
         }
     }
 }

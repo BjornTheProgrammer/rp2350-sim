@@ -10,7 +10,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, BlT1::opcode(0x34));
+        rp2350.cortex_m33.memory.write_u32(RAM_START_ADDRESS, BlT1::opcode(0x34));
 
         rp2350.execute_instruction();
 
@@ -24,7 +24,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, BlT1::opcode(-0x10));
+        rp2350.cortex_m33.memory.write_u32(RAM_START_ADDRESS, BlT1::opcode(-0x10));
 
         rp2350.execute_instruction();
 
@@ -38,7 +38,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, BlT1::opcode(-3242));
+        rp2350.cortex_m33.memory.write_u32(RAM_START_ADDRESS, BlT1::opcode(-3242));
 
         rp2350.execute_instruction();
 

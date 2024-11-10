@@ -15,7 +15,7 @@ mod tests {
             rp2350.cortex_m33.registers.r2
         ];
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             StmiaT1::opcode(&rp2350.cortex_m33.registers.r0, registers),
         );
@@ -29,7 +29,7 @@ mod tests {
         assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000002);
         assert_eq!(rp2350.cortex_m33.registers.r0.get(), 0x20000018);
 
-        assert_eq!(rp2350.read_u32_from_address(0x20000010), 0xf00df00d);
-        assert_eq!(rp2350.read_u32_from_address(0x20000014), 0x4242);
+        assert_eq!(rp2350.cortex_m33.memory.read_u32(0x20000010), 0xf00df00d);
+        assert_eq!(rp2350.cortex_m33.memory.read_u32(0x20000014), 0x4242);
     }
 }

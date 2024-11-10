@@ -10,7 +10,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(RAM_START_ADDRESS, DsbT1Sy::opcode());
+        rp2350.cortex_m33.memory.write_u32(RAM_START_ADDRESS, DsbT1Sy::opcode());
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000004);

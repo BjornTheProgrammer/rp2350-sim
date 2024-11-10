@@ -2,10 +2,12 @@ use bilge::prelude::*;
 use core::ops::Range;
 use std::ops::{Bound, RangeBounds};
 
+use crate::cortex_m33::control::SpSel;
+
 use super::{
     apsr::Apsr,
     exception::Exceptions,
-    registers::{self, PcRegister, Register},
+    registers::{PcRegister, Register},
     CortexM33, Mode,
 };
 
@@ -235,7 +237,7 @@ pub fn exception_active_bit_count(exceptions: &Exceptions) -> usize {
     exceptions.active.len()
 }
 
-pub fn exception_return(cortex: &CortexM33, ipsr: u8, current_mode: Mode, exc_return: u32) {
+pub fn exception_return(cortex: &mut CortexM33, ipsr: u8, current_mode: Mode, exc_return: u32) {
     assert_eq!(current_mode, Mode::Handler);
     if !is_ones(get_bits(exc_return, 4..=27), 0..23) {
         unpredictable!();
@@ -247,23 +249,52 @@ pub fn exception_return(cortex: &CortexM33, ipsr: u8, current_mode: Mode, exc_re
     if cortex
         .exceptions
         .active
-        .contains_key(&returning_exception_number)
-    {
+        .contains_key(&returning_exception_number) {
         unpredictable!();
     }
+
     match get_bits(exc_return, 0..=3) {
-        0b0000 => {
+        0b0001 => {
             if nested_activation == 1 {
                 unpredictable!();
-            } else {
-                // let frameptr = cortex.registers.sp;
-                // CurrentMode = Mode_Handler;
-                // CONTROL.SPSEL = ‘0’;
             }
-        }
+
+            let frameptr = cortex.registers.sp.get_msp();
+            let current_mode = Mode::Handler;
+            cortex.control.spsel = SpSel::SpMain;
+        },
+        0b1001 => {
+            if nested_activation != 1 {
+                unpredictable!();
+            }
+
+            let frameptr = cortex.registers.sp.get_msp();
+            let current_mode = Mode::Thread;
+            cortex.control.spsel = SpSel::SpMain;
+        },
+        0b1101 => {
+            if nested_activation != 1 {
+                unpredictable!();
+            }
+
+            let frameptr = cortex.registers.sp.get_psp();
+            let current_mode = Mode::Thread;
+            cortex.control.spsel = SpSel::SpProcess;
+        },
         _ => unpredictable!(),
     }
+
+
 }
+
+pub fn deactivate(cortex: &mut CortexM33, returning_exception_number: u8) {
+    cortex.exceptions.active.remove(&returning_exception_number);
+}
+
+// pub fn popstack<T: Memory>(cortex: &mut T, frameptr: u32, exc_return: u32) {
+//     // cortex.registers[0] = cortex;
+//     // cortex.
+// }
 
 pub fn bx_write_pc(pc: &mut PcRegister, current_mode: Mode, address: u32) {
     if current_mode == Mode::Handler && get_bits(address, 28..=31) == 0b1111 {

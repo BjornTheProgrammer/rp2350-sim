@@ -10,7 +10,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             AsrImmediateT1::opcode(
                 &rp2350.cortex_m33.registers.r3,
@@ -35,7 +35,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             AsrImmediateT1::opcode(
                 &rp2350.cortex_m33.registers.r3,
@@ -60,7 +60,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             AsrRegisterT1::opcode(
                 &rp2350.cortex_m33.registers.r3,
@@ -84,7 +84,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             AsrRegisterT1::opcode(
                 &rp2350.cortex_m33.registers.r3,
@@ -109,7 +109,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             AsrRegisterT1::opcode(
                 &rp2350.cortex_m33.registers.r3,
@@ -134,7 +134,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             AsrRegisterT1::opcode(
                 &rp2350.cortex_m33.registers.r3,
@@ -159,7 +159,7 @@ mod tests {
         let mut rp2350: RP2350 = RP2350::new();
         rp2350.cortex_m33.registers.pc.set(RAM_START_ADDRESS);
 
-        rp2350.write_to_address(
+        rp2350.cortex_m33.memory.write_u16(
             RAM_START_ADDRESS,
             AsrRegisterT1::opcode(
                 &rp2350.cortex_m33.registers.r3,

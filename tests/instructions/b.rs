@@ -17,7 +17,7 @@ mod tests {
         rp2350.cortex_m33.apsr.set_z(false);
 
         let opcode = BT1::opcode(1, 0x1f8);
-        rp2350.write_to_address(RAM_START_ADDRESS + 9 * 2, opcode);
+        rp2350.cortex_m33.memory.write_u16(RAM_START_ADDRESS + 9 * 2, opcode);
         rp2350.execute_instruction();
 
         assert_eq_hex!(rp2350.cortex_m33.registers.pc.get(), 0x2000000e);
@@ -33,7 +33,7 @@ mod tests {
             .pc
             .set(RAM_START_ADDRESS + 9 * 2);
 
-        rp2350.write_to_address(RAM_START_ADDRESS + 9 * 2, BT2::opcode(0xfec));
+        rp2350.cortex_m33.memory.write_u16(RAM_START_ADDRESS + 9 * 2, BT2::opcode(0xfec));
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.pc.get(), 0x20000002);

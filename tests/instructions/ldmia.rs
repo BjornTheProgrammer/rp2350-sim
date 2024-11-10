@@ -15,11 +15,11 @@ mod tests {
         ];
 
         let opcode = LdmiaT1::opcode(&rp2350.cortex_m33.registers.r0, registers.into());
-        rp2350.write_to_address(RAM_START_ADDRESS, opcode);
+        rp2350.cortex_m33.memory.write_u16(RAM_START_ADDRESS, opcode);
         rp2350.cortex_m33.registers.r0.set(0x20000010);
 
-        rp2350.write_to_address(0x20000010, 0xf00df00d as u32);
-        rp2350.write_to_address(0x20000014, 0x4242 as u16);
+        rp2350.cortex_m33.memory.write_u32(0x20000010, 0xf00df00d as u32);
+        rp2350.cortex_m33.memory.write_u16(0x20000014, 0x4242 as u16);
 
         rp2350.execute_instruction();
 

@@ -3,7 +3,7 @@ mod tests {
     use rp2350_sim::cortex_m33::opcodes::*;
     use rp2350_sim::cortex_m33::registers::Register;
 
-    use rp2350_sim::{registers, RAM_START_ADDRESS, RP2350};
+    use rp2350_sim::{registers, RP2350Memory, RAM_START_ADDRESS, RP2350};
 
     #[test]
     fn push() {
@@ -23,7 +23,7 @@ mod tests {
         ];
         let binary = PushT1::opcode(true, registers.into());
 
-        rp2350.write_to_address(RAM_START_ADDRESS, binary);
+        rp2350.cortex_m33.memory.write_u16(RAM_START_ADDRESS, binary);
 
         rp2350.cortex_m33.registers.r4.set(0x40);
         rp2350.cortex_m33.registers.r5.set(0x50);
@@ -32,13 +32,16 @@ mod tests {
 
         rp2350.execute_instruction();
 
+        let memory: &RP2350Memory = rp2350.cortex_m33.memory.as_any().downcast_ref().unwrap();
+
         assert_eq!(
             rp2350.cortex_m33.registers.sp.get(),
             RAM_START_ADDRESS + 0xf0
         );
-        assert_eq!(rp2350.sram[0xf0], 0x40);
-        assert_eq!(rp2350.sram[0xf4], 0x50);
-        assert_eq!(rp2350.sram[0xf8], 0x60);
-        assert_eq!(rp2350.sram[0xfc], 0x42);
+        assert_eq!(memory.sram[0xf0], 0x40);
+        assert_eq!(memory.sram[0xf4], 0x50);
+        assert_eq!(memory.sram[0xf8], 0x60);
+        assert_eq!(memory.sram[0xfc], 0x42);
     }
 }
+

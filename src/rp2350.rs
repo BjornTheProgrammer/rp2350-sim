@@ -1,5 +1,8 @@
+use std::any::Any;
+
 use crate::cortex_m33::registers::Register;
 use crate::cortex_m33::{CortexM33, OpCode};
+use crate::MemoryInterface;
 use anyhow::{Context, Result};
 
 const KB_OF_RAM: usize = 520;
@@ -25,26 +28,75 @@ AHB Peripherals 				0x50000000
 Core-local Peripherals (SIO) 	0xd0000000
 Cortex-M33 private registers 	0xe0000000
 */
-pub struct RP2350 {
+pub struct RP2350Memory {
     // SRAM is partitioned into 10 banks that act like one
     pub sram: [u8; KB_OF_RAM * KB],
 
     // Has to be on the heap, absolutely blows up the stack
     pub flash: Box<[u8; MB_OF_FLASH * MB]>,
-
-    pub cortex_m33: CortexM33,
 }
 
-impl RP2350 {
+impl RP2350Memory {
     pub fn new() -> Self {
-        RP2350 {
+        Self {
             sram: [0; KB_OF_RAM * 1024],
             // The box has to be defined like this, cuz for whatever reason this causes stack overflows still in tests. https://github.com/rust-lang/rust/issues/53827
             flash: vec![0xff; MB_OF_FLASH * 1024 * 1024]
                 .into_boxed_slice()
                 .try_into()
                 .unwrap(),
-            cortex_m33: CortexM33::new(),
+        }
+    }
+}
+
+pub struct RP2350 {
+    pub cortex_m33: CortexM33,
+}
+
+impl<'a> MemoryInterface<u32> for RP2350Memory {
+    fn read(&self, address: u32) -> u8 {
+        match address {
+            FLASH_START_ADDRESS..RAM_START_ADDRESS => {
+                let flash_address = address - FLASH_START_ADDRESS;
+                self.flash[flash_address as usize]
+            }
+            RAM_START_ADDRESS..APB_START_ADDRESS => {
+                let ram_address = address - RAM_START_ADDRESS;
+                self.sram[ram_address as usize]
+            }
+            _ => unimplemented!("File a github issue and this will get implmented"),
+        }
+    }
+
+    fn write(&mut self, address: u32, value: u8) {
+        match address {
+            0x00000000..FLASH_START_ADDRESS => {
+                panic!("What the fuck are you doing? ROM is readonly.")
+            }
+            FLASH_START_ADDRESS..RAM_START_ADDRESS => {
+                panic!("What the fuck are you doing? Flash/XIP is readonly.")
+            }
+            RAM_START_ADDRESS..APB_START_ADDRESS => {
+                self.sram[address as usize - 0x20000000 as usize] = value;
+            }
+            _ => {
+                unimplemented!("File a github issue and this will get implmeented")
+            }
+        }   
+    }
+
+    fn as_any(&self) -> &(dyn Any + 'static) {
+        self
+    }
+}
+
+
+impl RP2350 {
+    pub fn new() -> Self {
+        let memory = RP2350Memory::new();
+        let cortex = CortexM33::new(Box::new(memory));
+        RP2350 {
+            cortex_m33: cortex
         }
     }
 
@@ -64,7 +116,7 @@ impl RP2350 {
                         .context("Failed to get value from bytes")?;
                     let value = u8::from_str_radix(value, 16)?;
 
-                    self.flash[addr + i] = value;
+                    self.cortex_m33.memory.write((addr + i) as u32, value);
                 }
             }
         }
@@ -73,88 +125,12 @@ impl RP2350 {
     }
 
     pub fn get_opcode(&self) -> OpCode {
-        self.read_from_address(self.cortex_m33.registers.pc.get())
+        let address = self.cortex_m33.registers.pc.get();
+        OpCode::from_address(&self.cortex_m33, address)
     }
 
     pub fn execute_instruction(&mut self) {
         let opcode = self.get_opcode();
-        opcode.execute(self);
-    }
-
-    pub fn read_u32_from_address(&self, address: u32) -> u32 {
-        let first_byte = self.read_from_address(address).code;
-        let second_byte = self.read_from_address(address + 2).code;
-
-        let result: u32 = ((second_byte as u32) << 16) | (first_byte as u32);
-
-        result
-    }
-
-    pub fn read_from_address(&self, address: u32) -> OpCode {
-        match address {
-            FLASH_START_ADDRESS..RAM_START_ADDRESS => {
-                let flash_address = address - FLASH_START_ADDRESS;
-                let first_byte = self.flash[flash_address as usize];
-                let second_byte = self.flash[flash_address as usize + 1];
-
-                let opcode: u16 = ((first_byte as u16) << 8) | (second_byte as u16);
-
-                OpCode {
-                    code: opcode,
-                    address,
-                }
-            }
-            RAM_START_ADDRESS..APB_START_ADDRESS => {
-                let ram_address = address - RAM_START_ADDRESS;
-                let first_byte = self.sram[ram_address as usize];
-                let second_byte = self.sram[ram_address as usize + 1];
-
-                let opcode: u16 = ((first_byte as u16) << 8) | (second_byte as u16);
-
-                OpCode {
-                    code: opcode,
-                    address,
-                }
-            }
-            _ => unimplemented!("File a github issue and this will get implmeented"),
-        }
-    }
-
-    pub fn write_to_address<V: num_traits::ToBytes + derive_more::LowerHex>(
-        &mut self,
-        address: u32,
-        value: V,
-    ) {
-        match address {
-            0x00000000..FLASH_START_ADDRESS => {
-                panic!("What the fuck are you doing? ROM is readonly.")
-            }
-            FLASH_START_ADDRESS..RAM_START_ADDRESS => {
-                panic!("What the fuck are you doing? Flash/XIP is readonly.")
-            }
-            RAM_START_ADDRESS..APB_START_ADDRESS => {
-                let bytes = value.to_be_bytes();
-                let bytes = bytes.as_ref();
-
-                for (i, byte) in bytes.chunks(2).rev().enumerate() {
-                    match byte.get(0) {
-                        Some(val) => {
-                            self.sram[address as usize - 0x20000000 as usize + i * 2] = *val;
-                        }
-                        None => (),
-                    }
-
-                    match byte.get(1) {
-                        Some(val) => {
-                            self.sram[address as usize - 0x20000000 as usize + i * 2 + 1] = *val;
-                        }
-                        None => (),
-                    }
-                }
-            }
-            _ => {
-                unimplemented!("File a github issue and this will get implmeented")
-            }
-        }
+        opcode.execute(&mut self.cortex_m33);
     }
 }
