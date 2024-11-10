@@ -19,15 +19,15 @@ mod tests {
         );
         rp2350.cortex_m33.registers.r4.set(55);
         rp2350.cortex_m33.registers.r5.set(66);
-        rp2350.cortex_m33.apsr.set_c(true);
+        rp2350.cortex_m33.xpsr.apsr.set_c(true);
 
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r5.get(), 122);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), false);
     }
 
     #[test]
@@ -45,15 +45,15 @@ mod tests {
         );
         rp2350.cortex_m33.registers.r4.set(0x7fffffff); // Max signed INT32
         rp2350.cortex_m33.registers.r5.set(0);
-        rp2350.cortex_m33.apsr.set_c(true);
+        rp2350.cortex_m33.xpsr.apsr.set_c(true);
 
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r5.get(), 0x80000000);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), true);
     }
 
     #[test]
@@ -71,16 +71,16 @@ mod tests {
         );
         rp2350.cortex_m33.registers.r2.set(0); // Max signed INT32
         rp2350.cortex_m33.registers.r3.set(0);
-        rp2350.cortex_m33.apsr.set_c(true);
-        rp2350.cortex_m33.apsr.set_z(true);
+        rp2350.cortex_m33.xpsr.apsr.set_c(true);
+        rp2350.cortex_m33.xpsr.apsr.set_z(true);
 
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r3.get(), 1);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), false);
     }
 
     #[test]
@@ -97,14 +97,14 @@ mod tests {
             ),
         );
         rp2350.cortex_m33.registers.r0.set(0x80000000); // Max signed INT32
-        rp2350.cortex_m33.apsr.set_c(false);
+        rp2350.cortex_m33.xpsr.apsr.set_c(false);
 
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r0.get(), 0);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), true);
     }
 }

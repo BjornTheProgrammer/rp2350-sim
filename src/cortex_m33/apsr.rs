@@ -1,35 +1,112 @@
-use bilge::bitsize;
-use bilge::prelude::*;
-use bilge::FromBits;
+use bitmatch::*;
 
-#[bitsize(32)]
-#[derive(FromBits, Clone, Copy, DebugBits)]
-struct ApsrInternal {
+#[derive(Debug, Default)]
+pub struct Xpsr {
+    pub apsr: Apsr,
+    pub ipsr: Ipsr,
+    pub epsr: Epsr,
+}
+
+impl Xpsr {
+    pub fn new() -> Self {
+        Xpsr::default()
+    }
+
+    pub fn set_from_u32(&mut self, value: u32) {
+        self.apsr.set_from_u32(value);
+        self.ipsr.set_from_u32(value);
+        self.epsr.set_from_u32(value);
+    }
+
+    pub fn into_u32(&self) -> u32 {
+        self.apsr.into_u32() | self.ipsr.into_u32() | self.epsr.into_u32()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Epsr {
+    ici_0: u8,
+    t: bool,
+    b: bool,
+    ici_1: u8,
+}
+
+impl Epsr {
+    pub fn new() -> Self {
+        Epsr::default()
+    }
+
+    pub fn ici(&self) -> u8 {
+        todo!();
+    }
+
+    pub fn set_t(&mut self, value: bool) {
+        self.t = value;
+    }
+
+    pub fn t(&self) -> bool {
+        self.t
+    }
+
+    pub fn set_b(&mut self, value: bool) {
+        self.b = value;
+    }
+
+    pub fn b(&self) -> bool {
+        self.b
+    }
+
+    #[bitmatch]
+    pub fn set_from_u32(&mut self, value: u32) {
+        #[bitmatch]
+        let "????_?uut_??b?_????_??ll_lll?_????_????" = value;
+        self.ici_0 = u as u8;
+        self.ici_1 = l as u8;
+        self.set_b(b != 0);
+        self.set_t(t != 0);
+    }
+
+    #[bitmatch]
+    pub fn into_u32(&self) -> u32 {
+        let l: u32 = self.ici_0.into();
+        let u: u32 = self.ici_1.into();
+        let b = self.b as u32;
+        let t = self.t as u32;
+        bitpack!("0000_0uut_00b0_0000_00ll_lll0_0000_0000")
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Ipsr(u8);
+
+impl Ipsr {
+    #[bitmatch]
+    pub fn set_from_u32(&mut self, value: u32) {
+        #[bitmatch]
+        let "????_????_????_????_????_????_vvvv_vvvv" = value;
+
+        self.0 = v as u8;
+    }
+
+    #[bitmatch]
+    pub fn into_u32(&self) -> u32 {
+        self.0 as u32
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Apsr {
     n: bool,
     z: bool,
     c: bool,
     v: bool,
     q: bool,
-    /**
-    This is reserved for other archetectures, and should never be used, after setting to 0.
-    */
-    bits0: u7,
-    ge: u4,
-    /**
-    This is reserved for other archetectures, and should never be used, after setting to 0.
-    */
-    bits1: u16,
-}
-
-#[derive(Debug)]
-pub struct Apsr {
-    aspr: ApsrInternal,
+    ge: u8
 }
 
 impl Apsr {
     pub fn new() -> Self {
-        let aspr = ApsrInternal::new(false, false, false, false, false, u7::new(0), u4::new(0), 0);
-        Self { aspr }
+        Apsr::default()
     }
 
     /**
@@ -41,7 +118,7 @@ impl Apsr {
     * 1: result is negative
     */
     pub fn n(&self) -> bool {
-        self.aspr.n()
+        self.n
     }
 
     /**
@@ -53,7 +130,7 @@ impl Apsr {
     * 1: result is zero
     */
     pub fn z(&self) -> bool {
-        self.aspr.z()
+        self.z
     }
 
     /**
@@ -65,7 +142,7 @@ impl Apsr {
     * 1: Carry occurred, or last bit shifted was set
     */
     pub fn c(&self) -> bool {
-        self.aspr.c()
+        self.c
     }
 
     /**
@@ -77,7 +154,7 @@ impl Apsr {
     * 1: Signed overflow occurred.
     */
     pub fn v(&self) -> bool {
-        self.aspr.v()
+        self.v
     }
 
     /**
@@ -89,7 +166,7 @@ impl Apsr {
     * 1: Saturation or overflow has occurred since bit was last cleared.
     */
     pub fn q(&self) -> bool {
-        self.aspr.q()
+        self.q
     }
 
     /**
@@ -97,41 +174,57 @@ impl Apsr {
     whether the result was greater than or equal to zero. SEL instructions use these bits to determine which
     register to select a particular byte from.
     */
-    pub fn ge(&self) -> u4 {
-        self.aspr.ge()
+    pub fn ge(&self) -> u8 {
+        self.ge
     }
 
     pub fn set_n(&mut self, value: bool) {
-        self.aspr.set_n(value);
+        self.n = value
     }
 
     pub fn set_z(&mut self, value: bool) {
-        self.aspr.set_z(value);
+        self.z = value
     }
 
     pub fn set_c(&mut self, value: bool) {
-        self.aspr.set_c(value);
+        self.c = value
     }
 
     pub fn set_v(&mut self, value: bool) {
-        self.aspr.set_v(value);
+        self.v = value
     }
 
     pub fn set_q(&mut self, value: bool) {
-        self.aspr.set_q(value);
+        self.q = value
     }
 
-    pub fn set_ge(&mut self, value: u4) {
-        self.aspr.set_ge(value);
+    pub fn set_ge(&mut self, value: u8) {
+        self.ge = value
     }
 
-    pub fn binary(&self) -> u32 {
-        self.aspr.into()
-    }
-
+    #[bitmatch]
     pub fn set_from_u32(&mut self, value: u32) {
-        self.aspr = ApsrInternal::from(value);
-        self.aspr.set_bits0(u7::new(0));
-        self.aspr.set_bits1(0);
+        #[bitmatch]
+        let "nzcv_q???_????_gggg_????_????_????_????" = value;
+        self.set_n(n != 0);
+        self.set_z(z != 0);
+        self.set_c(c != 0);
+        self.set_v(v != 0);
+        self.set_q(q != 0);
+
+        self.set_ge(g as u8);
+    }
+
+    #[bitmatch]
+    pub fn into_u32(&self) -> u32 {
+        let n = self.n() as u32;
+        let z = self.z() as u32;
+        let c = self.c() as u32;
+        let v = self.v() as u32;
+        let q = self.q() as u32;
+
+        let g: u32 = self.ge().into();
+
+        bitpack!("nzcv_q000_0000_gggg_0000_0000_0000_0000")
     }
 }

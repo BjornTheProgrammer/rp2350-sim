@@ -14,7 +14,7 @@ mod tests {
             .registers
             .pc
             .set(RAM_START_ADDRESS + 9 * 2);
-        rp2350.cortex_m33.apsr.set_z(false);
+        rp2350.cortex_m33.xpsr.apsr.set_z(false);
 
         let opcode = BT1::opcode(1, 0x1f8);
         rp2350.cortex_m33.memory.write_u16(RAM_START_ADDRESS + 9 * 2, opcode);

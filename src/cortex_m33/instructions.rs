@@ -327,9 +327,9 @@ impl Instruction {
 
                 let rm_value = cortex_m33.get_register_from_number(rm).get();
                 let rdn_value = cortex_m33.get_register_from_number(rdn).get()
-                    + cortex_m33.apsr.c() as u32;
+                    + cortex_m33.xpsr.apsr.c() as u32;
                 let result = add_instruction_update_flags(
-                    &mut cortex_m33.apsr,
+                    &mut cortex_m33.xpsr.apsr,
                     rm_value,
                     rdn_value,
                     false,
@@ -359,7 +359,7 @@ impl Instruction {
 
                 let rn_value = cortex_m33.get_register_from_number(rn).get();
                 let result = add_instruction_update_flags(
-                    &mut cortex_m33.apsr,
+                    &mut cortex_m33.xpsr.apsr,
                     rn_value,
                     imm3 as u32,
                     false,
@@ -372,7 +372,7 @@ impl Instruction {
 
                 let rdn_value = cortex_m33.get_register_from_number(rdn).get();
                 let result = add_instruction_update_flags(
-                    &mut cortex_m33.apsr,
+                    &mut cortex_m33.xpsr.apsr,
                     rdn_value,
                     imm8 as u32,
                     false,
@@ -387,7 +387,7 @@ impl Instruction {
                 let rn_value = cortex_m33.get_register_from_number(rn).get();
                 let rm_value = cortex_m33.get_register_from_number(rm).get();
                 let result = add_instruction_update_flags(
-                    &mut cortex_m33.apsr,
+                    &mut cortex_m33.xpsr.apsr,
                     rn_value,
                     rm_value,
                     false,
@@ -433,15 +433,15 @@ impl Instruction {
                 let rm = get_bits(opcode, 3..6);
                 let rm_value = cortex_m33.get_register_from_number(rm).get();
                 let (shifted, carry) =
-                    shift_c(rm_value, SRType::Lsl, 0, cortex_m33.apsr.c());
+                    shift_c(rm_value, SRType::Lsl, 0, cortex_m33.xpsr.apsr.c());
 
                 let rdn = cortex_m33.get_register_from_number(rdn);
                 let result = rdn.get() & shifted;
                 rdn.set(result);
 
-                cortex_m33.apsr.set_n(get_bit(result, 31));
-                cortex_m33.apsr.set_z(is_zero_bit(result));
-                cortex_m33.apsr.set_c(carry);
+                cortex_m33.xpsr.apsr.set_n(get_bit(result, 31));
+                cortex_m33.xpsr.apsr.set_z(is_zero_bit(result));
+                cortex_m33.xpsr.apsr.set_c(carry);
             }
             AsrImmediateT1 => {
                 let rd = get_bits(opcode, 0..3);
@@ -452,12 +452,12 @@ impl Instruction {
 
                 let rm = cortex_m33.get_register_from_number(rm).get();
 
-                let (result, carry) = shift_c(rm, SRType::Asr, shift_n, cortex_m33.apsr.c());
+                let (result, carry) = shift_c(rm, SRType::Asr, shift_n, cortex_m33.xpsr.apsr.c());
                 cortex_m33.get_register_from_number(rd).set(result);
 
-                cortex_m33.apsr.set_n(get_bit(result, 31));
-                cortex_m33.apsr.set_z(is_zero_bit(result));
-                cortex_m33.apsr.set_c(carry);
+                cortex_m33.xpsr.apsr.set_n(get_bit(result, 31));
+                cortex_m33.xpsr.apsr.set_z(is_zero_bit(result));
+                cortex_m33.xpsr.apsr.set_c(carry);
             }
             AsrRegisterT1 => {
                 let rdn = get_bits(opcode, 0..=2);
@@ -472,14 +472,14 @@ impl Instruction {
                     cortex_m33.get_register_from_number(rdn).get(),
                     SRType::Asr,
                     shift_n,
-                    cortex_m33.apsr.c(),
+                    cortex_m33.xpsr.apsr.c(),
                 );
                 cortex_m33.get_register_from_number(rdn).set(result);
 
                 if setflags {
-                    cortex_m33.apsr.set_n(get_bit(result, 31));
-                    cortex_m33.apsr.set_z(is_zero_bit(result));
-                    cortex_m33.apsr.set_c(carry);
+                    cortex_m33.xpsr.apsr.set_n(get_bit(result, 31));
+                    cortex_m33.xpsr.apsr.set_z(is_zero_bit(result));
+                    cortex_m33.xpsr.apsr.set_c(carry);
                 }
             }
             BT1 => {
@@ -495,7 +495,7 @@ impl Instruction {
                     _ => unreachable!(),
                 } as i32;
 
-                if condition_passed(&cortex_m33.apsr, cond) {
+                if condition_passed(&cortex_m33.xpsr.apsr, cond) {
                     let pc_value = cortex_m33.registers.pc.get();
                     branch_write_pc(
                         &mut cortex_m33.registers.pc,
@@ -530,16 +530,16 @@ impl Instruction {
                 let shift_t = SRType::Lsl;
                 let shift_n = 0;
 
-                let (shifted, carry) = shift_c(rm, shift_t, shift_n, cortex_m33.apsr.c());
+                let (shifted, carry) = shift_c(rm, shift_t, shift_n, cortex_m33.xpsr.apsr.c());
 
                 let rdn = cortex_m33.get_register_from_number(rdn);
                 let result = rdn.get() & !shifted;
                 rdn.set(result);
 
                 if setflags {
-                    cortex_m33.apsr.set_n(get_bit(result, 31));
-                    cortex_m33.apsr.set_z(is_zero_bit(result));
-                    cortex_m33.apsr.set_c(carry);
+                    cortex_m33.xpsr.apsr.set_n(get_bit(result, 31));
+                    cortex_m33.xpsr.apsr.set_z(is_zero_bit(result));
+                    cortex_m33.xpsr.apsr.set_c(carry);
                 }
             }
             BkptT1 => {

@@ -85,6 +85,7 @@ pub fn is_zero_bit(x: u32) -> bool {
     x == 0
 }
 
+/// Indexs from 0.
 pub fn get_bit<V: num_traits::PrimInt>(value: V, bit: usize) -> bool {
     assert!(bit < get_size_of_number(value));
 
@@ -291,10 +292,36 @@ pub fn deactivate(cortex: &mut CortexM33, returning_exception_number: u8) {
     cortex.exceptions.active.remove(&returning_exception_number);
 }
 
-// pub fn popstack<T: Memory>(cortex: &mut T, frameptr: u32, exc_return: u32) {
-//     // cortex.registers[0] = cortex;
-//     // cortex.
-// }
+pub fn popstack(cortex: &mut CortexM33, frameptr: u32, exc_return: u32) {
+    cortex.registers[0] = cortex.memory.read_u32(frameptr);
+    cortex.registers[1] = cortex.memory.read_u32(frameptr + 0x04);
+    cortex.registers[2] = cortex.memory.read_u32(frameptr + 0x08);
+    cortex.registers[3] = cortex.memory.read_u32(frameptr + 0x0C);
+    cortex.registers[12] = cortex.memory.read_u32(frameptr + 0x10);
+    cortex.registers.lr.set(frameptr + 0x14);
+    cortex.registers.pc.set(frameptr + 0x18);
+    let psr = frameptr + 0x1C;
+
+    if get_bit(psr, 0) == true { unpredictable!() }
+    branch_to(cortex, cortex.registers.pc.get());
+
+    let sp_mask = (get_bit(psr, 9) as u32) << 2;
+    match get_bits(exc_return, 0..=3) {
+        0b0001 | 0b1001 => {
+            let msp = cortex.registers.sp.get_msp() + 0x20;
+            cortex.registers.sp.set_msp(msp | sp_mask);
+        },
+        0b1101 => {
+            let psp = cortex.registers.sp.get_psp() + 0x20;
+            cortex.registers.sp.set_msp(psp | sp_mask);
+        },
+        _ => unpredictable!(),
+    }
+}
+
+pub fn branch_to(cortex: &mut CortexM33, address: u32) {
+    cortex.registers.pc.set(address);
+}
 
 pub fn bx_write_pc(pc: &mut PcRegister, current_mode: Mode, address: u32) {
     if current_mode == Mode::Handler && get_bits(address, 28..=31) == 0b1111 {
@@ -315,9 +342,8 @@ pub fn branch_write_pc(pc: &mut PcRegister, address: u32) {
     pc.set(address & 0xFFFFFFFE);
 }
 
-// pub use proc_macros::sign_extend;
 
-// Will assign every bit to the left of start_size to the most significant bit.
+/// Will assign every bit to the left of start_size to the most significant bit.
 pub fn sign_extend<
     V: num_traits::PrimInt
         + num_traits::AsPrimitive<u128>

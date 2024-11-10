@@ -12,6 +12,7 @@ use crate::cortex_m33::apsr::Apsr;
 use crate::cortex_m33::nvic::Nvic;
 use crate::cortex_m33::registers::{CortexM33Registers, Register};
 use crate::MemoryInterface;
+use apsr::Xpsr;
 use control::Control;
 pub use instructions::OpCode;
 use shpr::Shpr;
@@ -26,7 +27,7 @@ pub enum Mode {
 
 pub struct CortexM33 {
     pub registers: CortexM33Registers,
-    pub apsr: Apsr,
+    pub xpsr: Xpsr,
     pub mode: Mode,
     pub ipsr: u8,
     pub exceptions: Exceptions,
@@ -42,7 +43,7 @@ impl CortexM33 {
     pub fn new(memory: Box<dyn MemoryInterface<u32>>) -> Self {
         Self {
             registers: CortexM33Registers::new(),
-            apsr: Apsr::new(),
+            xpsr: Xpsr::new(),
             mode: Mode::Thread,
             ipsr: 0,
             exceptions: Exceptions::new(),

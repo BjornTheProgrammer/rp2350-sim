@@ -22,7 +22,7 @@ mod tests {
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r5.get(), 0xf00f0000);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
     }
 }

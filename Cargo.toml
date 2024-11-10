@@ -10,3 +10,4 @@ num-traits = "0.2"
 bilge = "0.2.0"
 assert_hex = "0.4.1"
 byteorder = { version = "1" }
+bitmatch = "0.1.1"

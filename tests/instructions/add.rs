@@ -53,10 +53,10 @@ mod tests {
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r1.get(), 5);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), false);
     }
 
     #[test]
@@ -76,13 +76,13 @@ mod tests {
             "opcode: {:#x}",
             AddsT2::opcode(&rp2350.cortex_m33.registers.r1, 1)
         );
-        println!("apsr: {:?}", rp2350.cortex_m33.apsr);
+        println!("apsr: {:?}", rp2350.cortex_m33.xpsr.apsr);
 
         assert_eq!(rp2350.cortex_m33.registers.r1.get(), 0);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), false);
     }
 
     #[test]
@@ -105,10 +105,10 @@ mod tests {
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r1.get(), 29);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), false);
     }
 
     #[test]
@@ -131,10 +131,10 @@ mod tests {
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r4.get(), 0xb8308000);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), true);
     }
 
     #[test]
@@ -152,15 +152,15 @@ mod tests {
             ),
         );
         rp2350.cortex_m33.registers.r1.set(0xbf8d1424);
-        rp2350.cortex_m33.apsr.set_c(true);
+        rp2350.cortex_m33.xpsr.apsr.set_c(true);
 
         rp2350.execute_instruction();
 
         assert_eq!(rp2350.cortex_m33.registers.r1.get(), 0x7f1a2848);
-        assert_eq!(rp2350.cortex_m33.apsr.n(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.z(), false);
-        assert_eq!(rp2350.cortex_m33.apsr.c(), true);
-        assert_eq!(rp2350.cortex_m33.apsr.v(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.n(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.z(), false);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.c(), true);
+        assert_eq!(rp2350.cortex_m33.xpsr.apsr.v(), true);
     }
 
     #[test]

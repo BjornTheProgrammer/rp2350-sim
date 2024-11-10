@@ -1,8 +1,5 @@
 use crate::cortex_m33::operation::get_bits;
-use std::{
-    collections::HashMap,
-    ops::{Index, IndexMut},
-};
+use std::collections::HashMap;
 
 use super::CortexM33;
 

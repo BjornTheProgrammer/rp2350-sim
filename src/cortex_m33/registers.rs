@@ -53,6 +53,14 @@ impl SPRegister {
         self.1.psp
     }
 
+    pub fn set_msp(&mut self, value: u32) {
+        self.1.msp = value;
+    }
+
+    pub fn set_psp(&mut self, value: u32) {
+        self.1.psp = value;
+    }
+
     pub fn set_mode(&mut self, mode: SpMode) {
         self.1.mode = mode;
     }
