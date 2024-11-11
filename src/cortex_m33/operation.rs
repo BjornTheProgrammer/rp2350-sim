@@ -5,10 +5,7 @@ use std::ops::{Bound, RangeBounds};
 use crate::cortex_m33::control::SpSel;
 
 use super::{
-    apsr::Apsr,
-    exception::Exceptions,
-    registers::{PcRegister, Register},
-    CortexM33, Mode,
+    apsr::{Apsr, Ipsr}, control::NPriv, exception::Exceptions, registers::{PcRegister, Register}, CortexM33, Mode
 };
 
 pub fn add_with_carry(x: u32, y: u32, carry_in: bool) -> (u32, bool, bool) {
@@ -317,6 +314,19 @@ pub fn popstack(cortex: &mut CortexM33, frameptr: u32, exc_return: u32) {
         },
         _ => unpredictable!(),
     }
+
+    let mut aspr_values = Apsr::new();
+    aspr_values.set_from_u32(psr);
+
+    cortex.xpsr.apsr.set_n(aspr_values.n());
+    cortex.xpsr.apsr.set_z(aspr_values.z());
+    cortex.xpsr.apsr.set_c(aspr_values.c());
+    cortex.xpsr.apsr.set_v(aspr_values.v());
+
+    let force_thread = cortex.mode == Mode::Thread && cortex.control.npriv == NPriv::ThreadModeUnprivileged;
+
+    // let Ipsr
+
 }
 
 pub fn branch_to(cortex: &mut CortexM33, address: u32) {
